@@ -3,8 +3,34 @@
     $moduleName = $isSalami ? 'إدارة مخزن السلامي' : 'إدارة مخزون الورد';
     $dashboardRoute = $isSalami ? 'salami.dashboard' : 'flowers.dashboard';
     $items = $isSalami
-        ? ['الأصناف', 'إضافة مخزون', 'سجل الاستلامات', 'المخزون الحالي', 'حركة الأصناف', 'التالف', 'تسوية المخزون', 'الموردون', 'المحلات', 'فاتورة جديدة', 'سجل الفواتير', 'التقارير']
-        : ['أنواع الورد', 'إضافة مخزون', 'سجل الاستلامات', 'المخزون الحالي', 'حركة الورد', 'التالف', 'تسوية المخزون', 'خروج الورد', 'الموردون', 'فاتورة جديدة', 'سجل الفواتير', 'التقارير'];
+        ? [
+            ['label' => 'الأصناف', 'route' => 'salami.products.index'],
+            ['label' => 'إضافة مخزون', 'route' => 'salami.receipts.create'],
+            ['label' => 'سجل الاستلامات', 'route' => 'salami.receipts.index'],
+            ['label' => 'المخزون الحالي', 'route' => 'salami.inventory.index'],
+            ['label' => 'حركة الأصناف', 'route' => 'salami.inventory.index'],
+            ['label' => 'التالف'],
+            ['label' => 'تسوية المخزون'],
+            ['label' => 'الموردون', 'route' => 'salami.suppliers.index'],
+            ['label' => 'المحلات', 'route' => 'salami.customers.index'],
+            ['label' => 'فاتورة جديدة'],
+            ['label' => 'سجل الفواتير'],
+            ['label' => 'التقارير'],
+        ]
+        : [
+            ['label' => 'أنواع الورد'],
+            ['label' => 'إضافة مخزون'],
+            ['label' => 'سجل الاستلامات'],
+            ['label' => 'المخزون الحالي'],
+            ['label' => 'حركة الورد'],
+            ['label' => 'التالف'],
+            ['label' => 'تسوية المخزون'],
+            ['label' => 'خروج الورد'],
+            ['label' => 'الموردون'],
+            ['label' => 'فاتورة جديدة'],
+            ['label' => 'سجل الفواتير'],
+            ['label' => 'التقارير'],
+        ];
 @endphp
 
 <aside class="border-b border-slate-200 bg-slate-950 text-slate-100 lg:min-h-screen lg:border-b-0 lg:border-l">
@@ -30,9 +56,19 @@
         </a>
 
         @foreach ($items as $item)
-            <span class="cursor-not-allowed rounded-lg px-3 py-2.5 text-sm text-slate-500" aria-disabled="true" title="سيتم توفير هذه الشاشة في مرحلة لاحقة">
-                {{ $item }}
-            </span>
+            @if (isset($item['route']))
+                <a wire:navigate href="{{ route($item['route']) }}" @class([
+                    'rounded-lg px-3 py-2.5 text-sm font-semibold transition',
+                    'bg-white/10 text-white' => request()->routeIs($item['route'].'*'),
+                    'text-slate-300 hover:bg-white/5 hover:text-white' => ! request()->routeIs($item['route'].'*'),
+                ])>
+                    {{ $item['label'] }}
+                </a>
+            @else
+                <span class="cursor-not-allowed rounded-lg px-3 py-2.5 text-sm text-slate-500" aria-disabled="true" title="سيتم توفير هذه الشاشة في مرحلة لاحقة">
+                    {{ $item['label'] }}
+                </span>
+            @endif
         @endforeach
     </nav>
 </aside>

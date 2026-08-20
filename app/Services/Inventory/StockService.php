@@ -46,6 +46,10 @@ class StockService
 
                 $stockableAttributes = $this->stockableAttributes($lockedStockable);
 
+                if (StockMovement::query()->where($stockableAttributes)->exists()) {
+                    throw new StockMutationException('Opening stock cannot be recorded after stock history exists for this product.');
+                }
+
                 if (StockOpening::query()->where($stockableAttributes)->exists()) {
                     throw new DuplicateStockMutationException('Opening stock has already been recorded for this product.');
                 }

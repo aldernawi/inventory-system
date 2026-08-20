@@ -35,6 +35,11 @@ final class Quantity
         return new self($this->value->plus($quantity->value)->toScale(self::SCALE, RoundingMode::Unnecessary));
     }
 
+    public function minus(self $quantity): self
+    {
+        return new self($this->value->minus($quantity->value)->toScale(self::SCALE, RoundingMode::Unnecessary));
+    }
+
     public function negated(): self
     {
         return new self($this->value->negated()->toScale(self::SCALE, RoundingMode::Unnecessary));
@@ -63,6 +68,11 @@ final class Quantity
     public function isGreaterThan(self $quantity): bool
     {
         return $this->value->compareTo($quantity->value) > 0;
+    }
+
+    public function isLessThan(self $quantity): bool
+    {
+        return $this->value->compareTo($quantity->value) < 0;
     }
 
     public function toString(): string
