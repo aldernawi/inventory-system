@@ -40,6 +40,14 @@ final class Quantity
         return new self($this->value->minus($quantity->value)->toScale(self::SCALE, RoundingMode::Unnecessary));
     }
 
+    /**
+     * Invoice line totals are rounded once, half up, to the database's 3-decimal scale.
+     */
+    public function multipliedBy(self $quantity): self
+    {
+        return new self($this->value->multipliedBy($quantity->value)->toScale(self::SCALE, RoundingMode::HalfUp));
+    }
+
     public function negated(): self
     {
         return new self($this->value->negated()->toScale(self::SCALE, RoundingMode::Unnecessary));
@@ -73,6 +81,11 @@ final class Quantity
     public function isLessThan(self $quantity): bool
     {
         return $this->value->compareTo($quantity->value) < 0;
+    }
+
+    public function isEqualTo(self $quantity): bool
+    {
+        return $this->value->compareTo($quantity->value) === 0;
     }
 
     public function toString(): string

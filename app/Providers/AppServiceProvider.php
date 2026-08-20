@@ -35,6 +35,11 @@ class AppServiceProvider extends ServiceProvider
         Gate::define('manage-salami-master-data', fn (User $user): bool => $user->isAdmin());
         Gate::define('register-salami-opening-stock', fn (User $user): bool => $user->isAdmin());
         Gate::define('operate-salami-receipts', fn (User $user): bool => $user->is_active);
+        Gate::define('operate-salami-invoices', fn (User $user): bool => $user->is_active);
+        Gate::define('cancel-salami-invoices', fn (User $user): bool => $user->isAdmin());
+        Gate::define('register-salami-waste', fn (User $user): bool => $user->isAdmin());
+        Gate::define('perform-salami-adjustments', fn (User $user): bool => $user->isAdmin());
+        Gate::define('view-salami-reports', fn (User $user): bool => $user->is_active);
 
         Relation::enforceMorphMap([
             'salami_product' => SalamiProduct::class,

@@ -22,7 +22,7 @@ class SalamiInvoiceFactory extends Factory
             'customer_id' => SalamiCustomer::factory(),
             'invoice_date' => today(),
             'payment_type' => PaymentType::Cash,
-            'payment_status' => PaymentStatus::Unpaid,
+            'payment_status' => PaymentStatus::Paid,
             'subtotal_amount' => '0.000',
             'discount_amount' => '0.000',
             'total_amount' => '0.000',

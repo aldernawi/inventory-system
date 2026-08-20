@@ -20,4 +20,29 @@ trait AuthorizesSalamiAccess
     {
         Gate::authorize('operate-salami-receipts');
     }
+
+    protected function authorizeSalamiInvoices(): void
+    {
+        Gate::authorize('operate-salami-invoices');
+    }
+
+    protected function authorizeSalamiInvoiceCancellation(): void
+    {
+        Gate::authorize('cancel-salami-invoices');
+    }
+
+    protected function authorizeSalamiWaste(): void
+    {
+        Gate::authorize('register-salami-waste');
+    }
+
+    protected function authorizeSalamiAdjustments(): void
+    {
+        Gate::authorize('perform-salami-adjustments');
+    }
+
+    protected function authorizeSalamiReports(): void
+    {
+        Gate::authorize('view-salami-reports');
+    }
 }

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Models\SalamiCustomer;
+use App\Models\SalamiInvoice;
 use App\Models\SalamiProduct;
 use App\Models\SalamiReceipt;
 use App\Models\Supplier;
@@ -25,7 +26,7 @@ Route::middleware(['auth', 'active'])->group(function (): void {
     $salamiPage = static fn (string $title, string $component, array $parameters = []) => view('salami.livewire-page', compact('title', 'component', 'parameters'));
 
     Route::prefix('salami')->as('salami.')->group(function () use ($salamiPage): void {
-        Route::view('/dashboard', 'salami.dashboard')->name('dashboard');
+        Route::get('/dashboard', fn () => $salamiPage('الرئيسية | إدارة مخزن السلامي', 'salami.dashboard.index'))->name('dashboard');
 
         Route::get('/products', fn () => $salamiPage('الأصناف | إدارة مخزن السلامي', 'salami.products.index'))->name('products.index');
         Route::get('/products/create', fn () => $salamiPage('إضافة صنف | إدارة مخزن السلامي', 'salami.products.form'))->middleware('can:manage-salami-master-data')->name('products.create');
@@ -49,6 +50,22 @@ Route::middleware(['auth', 'active'])->group(function (): void {
 
         Route::get('/inventory', fn () => $salamiPage('المخزون الحالي | إدارة مخزن السلامي', 'salami.inventory.index'))->name('inventory.index');
         Route::get('/inventory/{product}/movements', fn (SalamiProduct $product) => $salamiPage('حركة الصنف | إدارة مخزن السلامي', 'salami.inventory.movement-history', compact('product')))->name('inventory.movements');
+
+        Route::get('/invoices', fn () => $salamiPage('سجل الفواتير | إدارة مخزن السلامي', 'salami.invoices.index'))->name('invoices.index');
+        Route::get('/invoices/create', fn () => $salamiPage('فاتورة جديدة | إدارة مخزن السلامي', 'salami.invoices.form'))->middleware('can:operate-salami-invoices')->name('invoices.create');
+        Route::get('/invoices/{invoice}/edit', fn (SalamiInvoice $invoice) => $salamiPage('تعديل فاتورة | إدارة مخزن السلامي', 'salami.invoices.form', compact('invoice')))->middleware('can:operate-salami-invoices')->name('invoices.edit');
+        Route::get('/invoices/{invoice}', fn (SalamiInvoice $invoice) => $salamiPage('تفاصيل فاتورة | إدارة مخزن السلامي', 'salami.invoices.show', compact('invoice')))->name('invoices.show');
+        Route::get('/invoices/{invoice}/print', function (SalamiInvoice $invoice) {
+            return view('salami.invoices.print', [
+                'invoice' => $invoice->load(['customer', 'items.product', 'createdBy', 'confirmedBy', 'cancelledBy']),
+            ]);
+        })->middleware('can:operate-salami-invoices')->name('invoices.print');
+
+        Route::get('/waste', fn () => $salamiPage('سجل التالف | إدارة مخزن السلامي', 'salami.waste.index'))->name('waste.index');
+        Route::get('/waste/create', fn () => $salamiPage('تسجيل تالف | إدارة مخزن السلامي', 'salami.waste.form'))->middleware('can:register-salami-waste')->name('waste.create');
+        Route::get('/adjustments', fn () => $salamiPage('تسوية المخزون | إدارة مخزن السلامي', 'salami.adjustments.index'))->middleware('can:perform-salami-adjustments')->name('adjustments.index');
+        Route::get('/adjustments/create', fn () => $salamiPage('تسوية المخزون | إدارة مخزن السلامي', 'salami.adjustments.form'))->middleware('can:perform-salami-adjustments')->name('adjustments.create');
+        Route::get('/reports', fn () => $salamiPage('تقارير السلامي | إدارة مخزن السلامي', 'salami.reports.index'))->middleware('can:view-salami-reports')->name('reports.index');
     });
 
     Route::prefix('flowers')->as('flowers.')->group(function (): void {

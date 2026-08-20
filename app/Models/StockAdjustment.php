@@ -10,12 +10,24 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use LogicException;
 
 #[Fillable(['stockable_type', 'stockable_id', 'system_quantity', 'actual_quantity', 'difference_quantity', 'adjustment_date', 'reason', 'notes', 'status', 'created_by', 'confirmed_by', 'confirmed_at', 'cancelled_by', 'cancelled_at', 'cancellation_reason'])]
 class StockAdjustment extends Model
 {
     /** @use HasFactory<StockAdjustmentFactory> */
     use HasFactory;
+
+    protected static function booted(): void
+    {
+        static::updating(function (): never {
+            throw new LogicException('Confirmed stock adjustments are immutable.');
+        });
+
+        static::deleting(function (): never {
+            throw new LogicException('Confirmed stock adjustments cannot be deleted.');
+        });
+    }
 
     protected function casts(): array
     {

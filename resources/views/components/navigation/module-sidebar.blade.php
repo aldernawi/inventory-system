@@ -9,13 +9,13 @@
             ['label' => 'سجل الاستلامات', 'route' => 'salami.receipts.index'],
             ['label' => 'المخزون الحالي', 'route' => 'salami.inventory.index'],
             ['label' => 'حركة الأصناف', 'route' => 'salami.inventory.index'],
-            ['label' => 'التالف'],
-            ['label' => 'تسوية المخزون'],
+            ['label' => 'التالف', 'route' => 'salami.waste.index'],
+            ['label' => 'تسوية المخزون', 'route' => 'salami.adjustments.index'],
             ['label' => 'الموردون', 'route' => 'salami.suppliers.index'],
             ['label' => 'المحلات', 'route' => 'salami.customers.index'],
-            ['label' => 'فاتورة جديدة'],
-            ['label' => 'سجل الفواتير'],
-            ['label' => 'التقارير'],
+            ['label' => 'فاتورة جديدة', 'route' => 'salami.invoices.create'],
+            ['label' => 'سجل الفواتير', 'route' => 'salami.invoices.index'],
+            ['label' => 'التقارير', 'route' => 'salami.reports.index'],
         ]
         : [
             ['label' => 'أنواع الورد'],
