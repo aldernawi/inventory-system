@@ -1,58 +1,55 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# نظام مخزون السلامي والورد
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+تطبيق Laravel واحد لإدارة مخزون السلامي والورد ضمن منطقتين تشغيليتين منفصلتين. يشتركان في تسجيل الدخول، المستخدمين، الواجهة والبنية المشتركة فقط. الورد لا يحتوي على عملاء أو محلات؛ المستلم فيه نص اختياري فقط.
 
-## About Laravel
+## المتطلبات
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- PHP 8.4+ وComposer 2 وNode.js/npm وMySQL 8+.
+- Laravel 13 وLivewire 4 وTailwind CSS 4 وVite 8؛ الإصدارات الدقيقة مقفلة في ملفات lock.
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## التشغيل محليًا
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+1. شغّل `composer install` و`npm install`.
+2. انسخ `.env.example` إلى `.env`، واضبط MySQL ثم شغّل `php artisan key:generate`.
+3. شغّل `php artisan migrate` و`php artisan db:seed` و`npm run dev` و`php artisan serve`.
 
-## Learning Laravel
+`DatabaseSeeder` يعمل في بيئة `local` فقط ويضيف تجهيزات اختبارية محلية. لا تستخدم الحسابات أو كلمات المرور التجريبية خارج التطوير.
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+## الوحدات
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+### السلامي
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
+الأصناف، الموردون، المحلات/العملاء، الرصيد الافتتاحي، الاستلام، المخزون وحركاته، فواتير البيع، التالف، التسويات، التقارير وطباعة الفواتير.
 
-## Agentic Development
+### الورد
 
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+أنواع الورد، الموردون، الرصيد الافتتاحي، الاستلام وضرر الوصول، المخزون وسجل الوصول، التالف، الخروج غير البيعي، فواتير البيع، التقارير وطباعة الفواتير. لا توجد جداول أو صفحات أو علاقات عملاء/محلات في الورد؛ `recipient_name` نص اختياري فقط.
 
-```bash
-composer require laravel/boost --dev
+## سلامة المخزون
 
-php artisan boost:install
-```
+كل تغيير في الكمية يمر عبر `StockService` داخل معاملة وقفل صف المنتج، وينشئ حركة دفتر غير قابلة للتعديل. الكميات والأسعار تستخدم decimals دقيقة؛ لا تستخدم floats. `StockLedgerReconciler` فحص قراءة فقط، ولا يصلح الأرصدة تلقائيًا.
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+## المدير الأول في الإنتاج
 
-## Contributing
+بعد النشر والمهاجرات شغّل `php artisan app:create-admin`. يطلب الاسم والبريد وكلمة المرور مرتين، يرفض البريد الموجود، ولا يعرض كلمة المرور في سطر الأوامر. الحد الأدنى لكلمة المرور 12 حرفًا.
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+## الاختبارات والبناء
 
-## Code of Conduct
+- `php artisan test`
+- `vendor/bin/pint`
+- `npm run build`
+- في PowerShell لتكامل MySQL: اضبط `RUN_MYSQL_INVENTORY_TESTS=1` ثم شغّل اختبارات `MySql*` في `tests/Feature`.
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+## قائمة نشر الإنتاج
 
-## Security Vulnerabilities
+- اضبط `APP_ENV=production` و`APP_DEBUG=false` و`APP_URL` و`APP_KEY` فريدًا.
+- اضبط بيانات MySQL الإنتاجية، ولا تضع أسرارًا في Git.
+- خلف HTTPS استخدم `SESSION_SECURE_COOKIE=true` واضبط `SESSION_DOMAIN` عند الحاجة.
+- اضبط `APP_LOCALE=ar` والمنطقة الزمنية المناسبة عبر `APP_TIMEZONE`؛ الافتراضي `Africa/Tripoli`.
+- اضبط التسجيل والبريد عند الحاجة.
+- شغّل `php artisan migrate --force` بعد نسخة احتياطية، ثم `php artisan config:cache` و`php artisan route:cache` و`php artisan view:cache` و`npm run build`.
+- أنشئ المدير الأول بالأمر التفاعلي أعلاه، ولا تشغّل بيانات البذر التجريبية في الإنتاج.
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+## حدود V1 المقصودة
 
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+الطباعة من المتصفح فقط؛ لا محاسبة عامة أو دفتر ديون متقدم؛ لا مستودعات/فروع متعددة أو FIFO متقدم؛ سجل وصول الورد ليس تتبع FIFO؛ إلغاء الاستلامات المؤكدة معطل؛ التالف والتسويات المؤكدة غير قابلة للتعديل بلا سير تصحيح متقدم؛ ولا تطبيق جوال أو API خارجي.
