@@ -10,12 +10,24 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use LogicException;
 
 #[Fillable(['stockable_type', 'stockable_id', 'movement_type', 'quantity', 'balance_before', 'balance_after', 'reference_type', 'reference_id', 'reverses_movement_id', 'notes', 'created_by', 'occurred_at'])]
 class StockMovement extends Model
 {
     /** @use HasFactory<StockMovementFactory> */
     use HasFactory;
+
+    protected static function booted(): void
+    {
+        static::updating(function (): never {
+            throw new LogicException('Stock movements are immutable and cannot be updated.');
+        });
+
+        static::deleting(function (): never {
+            throw new LogicException('Stock movements are immutable and cannot be deleted.');
+        });
+    }
 
     protected function casts(): array
     {
