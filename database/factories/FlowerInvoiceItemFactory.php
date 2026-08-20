@@ -18,6 +18,7 @@ class FlowerInvoiceItemFactory extends Factory
             'invoice_id' => FlowerInvoice::factory(),
             'flower_product_id' => FlowerProduct::factory(),
             'product_name' => 'ورد تجريبي',
+            'color' => 'أحمر',
             'unit' => 'ربطة',
             'quantity' => '1.000',
             'unit_price' => '22.000',

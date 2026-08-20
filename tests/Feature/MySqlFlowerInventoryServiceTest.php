@@ -13,6 +13,7 @@ use App\Models\StockMovement;
 use App\Models\Supplier;
 use App\Models\User;
 use App\Services\Flowers\ExitService;
+use App\Services\Flowers\InvoiceService;
 use App\Services\Flowers\ReceivingService;
 use App\Services\Flowers\WasteService;
 use App\Services\Inventory\StockService;
@@ -169,6 +170,37 @@ class MySqlFlowerInventoryServiceTest extends TestCase
                 $primary->rollBack();
             }
         }
+    }
+
+    public function test_mysql_flower_invoice_confirmation_and_cancellation_are_atomic_and_reversible(): void
+    {
+        $user = User::factory()->create();
+        $first = FlowerProduct::factory()->create();
+        $second = FlowerProduct::factory()->create();
+        $stock = app(StockService::class);
+        $stock->opening($first, '10.000', $user);
+        $stock->opening($second, '20.000', $user);
+
+        $invoice = app(InvoiceService::class)->createDraft([
+            'recipient_name' => 'قاعة الربيع', 'invoice_date' => '2026-08-20', 'payment_type' => 'cash',
+            'discount_amount' => '0.001', 'paid_amount' => '12.998', 'notes' => 'MySQL invoice',
+        ], [
+            ['flower_product_id' => $first->getKey(), 'quantity' => '1.111', 'unit_price' => '2.222'],
+            ['flower_product_id' => $second->getKey(), 'quantity' => '3.000', 'unit_price' => '3.510'],
+        ], $user);
+        $confirmed = app(InvoiceService::class)->confirm($invoice, $user);
+
+        $this->assertSame('8.889', $first->fresh()->current_quantity);
+        $this->assertSame('17.000', $second->fresh()->current_quantity);
+        $this->assertSame('12.998', $confirmed->total_amount);
+        $this->assertSame(2, StockMovement::query()->where('movement_type', MovementType::Sale)->count());
+        $this->assertSame('قاعة الربيع', $confirmed->recipient_name);
+
+        $cancelled = app(InvoiceService::class)->cancel($confirmed, $user, 'اختبار إلغاء MySQL');
+        $this->assertSame('cancelled', $cancelled->status->value);
+        $this->assertSame('10.000', $first->fresh()->current_quantity);
+        $this->assertSame('20.000', $second->fresh()->current_quantity);
+        $this->assertSame(2, StockMovement::query()->where('movement_type', MovementType::Reversal)->count());
     }
 
     private function configureMySqlTestDatabase(): void

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
+use App\Models\FlowerInvoice;
 use App\Models\FlowerProduct;
 use App\Models\FlowerReceipt;
 use App\Models\SalamiCustomer;
@@ -98,5 +99,12 @@ Route::middleware(['auth', 'active'])->group(function (): void {
         Route::get('/waste/create', fn () => $flowersPage('تسجيل تالف ورد | إدارة مخزون الورد', 'flowers.waste.form'))->middleware('can:register-flower-waste')->name('waste.create');
         Route::get('/exits', fn () => $flowersPage('خروج الورد | إدارة مخزون الورد', 'flowers.exits.index'))->name('exits.index');
         Route::get('/exits/create', fn () => $flowersPage('تسجيل خروج ورد | إدارة مخزون الورد', 'flowers.exits.form'))->middleware('can:operate-flower-exits')->name('exits.create');
+
+        Route::get('/invoices', fn () => $flowersPage('سجل فواتير الورد | إدارة مخزون الورد', 'flowers.invoices.index'))->name('invoices.index');
+        Route::get('/invoices/create', fn () => $flowersPage('فاتورة ورد جديدة | إدارة مخزون الورد', 'flowers.invoices.form'))->middleware('can:operate-flower-invoices')->name('invoices.create');
+        Route::get('/invoices/{invoice}/edit', fn (FlowerInvoice $invoice) => $flowersPage('تعديل فاتورة ورد | إدارة مخزون الورد', 'flowers.invoices.form', compact('invoice')))->middleware('can:operate-flower-invoices')->name('invoices.edit');
+        Route::get('/invoices/{invoice}', fn (FlowerInvoice $invoice) => $flowersPage('تفاصيل فاتورة ورد | إدارة مخزون الورد', 'flowers.invoices.show', compact('invoice')))->name('invoices.show');
+        Route::get('/invoices/{invoice}/print', fn (FlowerInvoice $invoice) => view('flowers.invoices.print', ['invoice' => $invoice->load(['items.product', 'createdBy', 'confirmedBy', 'cancelledBy'])]))->middleware('can:operate-flower-invoices')->name('invoices.print');
+        Route::get('/reports', fn () => $flowersPage('تقارير الورد | إدارة مخزون الورد', 'flowers.reports.index'))->middleware('can:view-flower-reports')->name('reports.index');
     });
 });

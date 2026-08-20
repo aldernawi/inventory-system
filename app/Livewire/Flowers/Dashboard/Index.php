@@ -6,6 +6,7 @@ use App\Enums\MovementType;
 use App\Enums\ReceiptStatus;
 use App\Livewire\Concerns\AuthorizesFlowerAccess;
 use App\Models\FlowerExit;
+use App\Models\FlowerInvoice;
 use App\Models\FlowerProduct;
 use App\Models\FlowerReceipt;
 use App\Models\FlowerReceiptItem;
@@ -41,11 +42,15 @@ class Index extends Component
             'arrivalDamageToday' => $this->sumAttribute((clone $confirmedReceiptItemsToday), 'damaged_quantity'),
             'wasteToday' => $this->sumAttribute((clone $movementQuery)->where('movement_type', MovementType::Waste), 'quantity', absolute: true),
             'manualExitsToday' => $this->sumAttribute((clone $movementQuery)->where('movement_type', MovementType::ManualExit), 'quantity', absolute: true),
+            'quantitySoldToday' => $this->sumAttribute((clone $movementQuery)->where('movement_type', MovementType::Sale), 'quantity', absolute: true),
+            'invoiceCountToday' => FlowerInvoice::query()->where('status', 'confirmed')->whereDate('invoice_date', $today)->count(),
+            'salesValueToday' => $this->sumAttribute(FlowerInvoice::query()->where('status', 'confirmed')->whereDate('invoice_date', $today), 'total_amount'),
             'lowStockProductCount' => $this->lowStockQuery()->count(),
             'lowStockProducts' => $this->lowStockQuery()->orderBy('current_quantity')->limit(5)->get(),
             'latestReceipts' => FlowerReceipt::query()->with('supplier')->latest('receipt_date')->latest('id')->limit(5)->get(),
             'latestWastes' => StockWaste::query()->with(['stockable', 'createdBy'])->where('stockable_type', $stockableType)->latest('waste_date')->latest('id')->limit(5)->get(),
             'latestExits' => FlowerExit::query()->with(['product', 'createdBy'])->latest('exit_date')->latest('id')->limit(5)->get(),
+            'latestInvoices' => FlowerInvoice::query()->with('createdBy')->latest('invoice_date')->latest('id')->limit(5)->get(),
         ]);
     }
 

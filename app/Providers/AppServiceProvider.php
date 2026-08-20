@@ -46,6 +46,9 @@ class AppServiceProvider extends ServiceProvider
         Gate::define('register-flower-waste', fn (User $user): bool => $user->isAdmin());
         Gate::define('operate-flower-exits', fn (User $user): bool => $user->is_active);
         Gate::define('view-flower-inventory', fn (User $user): bool => $user->is_active);
+        Gate::define('operate-flower-invoices', fn (User $user): bool => $user->is_active);
+        Gate::define('cancel-flower-invoices', fn (User $user): bool => $user->isAdmin());
+        Gate::define('view-flower-reports', fn (User $user): bool => $user->is_active);
 
         Relation::enforceMorphMap([
             'salami_product' => SalamiProduct::class,

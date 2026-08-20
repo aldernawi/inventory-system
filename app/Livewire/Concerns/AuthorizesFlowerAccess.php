@@ -35,4 +35,19 @@ trait AuthorizesFlowerAccess
     {
         Gate::authorize('view-flower-inventory');
     }
+
+    protected function authorizeFlowerInvoices(): void
+    {
+        Gate::authorize('operate-flower-invoices');
+    }
+
+    protected function authorizeFlowerInvoiceCancellation(): void
+    {
+        Gate::authorize('cancel-flower-invoices');
+    }
+
+    protected function authorizeFlowerReports(): void
+    {
+        Gate::authorize('view-flower-reports');
+    }
 }

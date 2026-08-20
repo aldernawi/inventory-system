@@ -7,6 +7,7 @@ use App\Enums\UserRole;
 use App\Livewire\Flowers\Inventory\MovementHistory;
 use App\Livewire\Flowers\Products\Form as ProductForm;
 use App\Livewire\Flowers\Receipts\Form as ReceiptForm;
+use App\Models\FlowerInvoice;
 use App\Models\FlowerProduct;
 use App\Models\FlowerReceipt;
 use App\Models\SalamiProduct;
@@ -116,5 +117,20 @@ class FlowerOperationsUiTest extends TestCase
         foreach ($routes as $route) {
             $this->actingAs($admin)->get($route)->assertOk();
         }
+    }
+
+    public function test_employee_can_use_flower_invoice_and_report_pages_but_only_admin_can_cancel(): void
+    {
+        $employee = User::factory()->create(['role' => UserRole::Employee]);
+        $admin = User::factory()->create(['role' => UserRole::Admin]);
+        $invoice = FlowerInvoice::factory()->create(['created_by' => $employee->getKey()]);
+
+        $this->actingAs($employee)->get(route('flowers.invoices.index'))->assertOk()->assertSee('سجل الفواتير');
+        $this->actingAs($employee)->get(route('flowers.invoices.create'))->assertOk()->assertSee('فاتورة ورد جديدة');
+        $this->actingAs($employee)->get(route('flowers.invoices.show', $invoice))->assertOk();
+        $this->actingAs($employee)->get(route('flowers.invoices.print', $invoice))->assertOk()->assertSee('فاتورة بيع');
+        $this->actingAs($employee)->get(route('flowers.reports.index'))->assertOk()->assertSee('تقارير الورد');
+        $this->assertFalse($employee->can('cancel-flower-invoices'));
+        $this->assertTrue($admin->can('cancel-flower-invoices'));
     }
 }

@@ -27,9 +27,9 @@
             ['label' => 'تسوية المخزون'],
             ['label' => 'خروج الورد', 'route' => 'flowers.exits.index'],
             ['label' => 'الموردون', 'route' => 'flowers.suppliers.index'],
-            ['label' => 'فاتورة جديدة'],
-            ['label' => 'سجل الفواتير'],
-            ['label' => 'التقارير'],
+            ['label' => 'فاتورة جديدة', 'route' => 'flowers.invoices.create'],
+            ['label' => 'سجل الفواتير', 'route' => 'flowers.invoices.index'],
+            ['label' => 'التقارير', 'route' => 'flowers.reports.index'],
         ];
 @endphp
 
