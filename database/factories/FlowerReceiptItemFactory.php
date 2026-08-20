@@ -18,6 +18,7 @@ class FlowerReceiptItemFactory extends Factory
             'receipt_id' => FlowerReceipt::factory(),
             'flower_product_id' => FlowerProduct::factory(),
             'product_name' => 'ورد تجريبي',
+            'color' => 'أحمر',
             'unit' => 'ربطة',
             'expected_quantity' => '100.000',
             'received_quantity' => '100.000',

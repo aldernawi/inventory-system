@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
+use App\Models\FlowerProduct;
+use App\Models\FlowerReceipt;
 use App\Models\SalamiCustomer;
 use App\Models\SalamiInvoice;
 use App\Models\SalamiProduct;
@@ -68,7 +70,33 @@ Route::middleware(['auth', 'active'])->group(function (): void {
         Route::get('/reports', fn () => $salamiPage('تقارير السلامي | إدارة مخزن السلامي', 'salami.reports.index'))->middleware('can:view-salami-reports')->name('reports.index');
     });
 
-    Route::prefix('flowers')->as('flowers.')->group(function (): void {
-        Route::view('/dashboard', 'flowers.dashboard')->name('dashboard');
+    $flowersPage = static fn (string $title, string $component, array $parameters = []) => view('flowers.livewire-page', compact('title', 'component', 'parameters'));
+
+    Route::prefix('flowers')->as('flowers.')->group(function () use ($flowersPage): void {
+        Route::get('/dashboard', fn () => $flowersPage('الرئيسية | إدارة مخزون الورد', 'flowers.dashboard.index'))->name('dashboard');
+
+        Route::get('/products', fn () => $flowersPage('أنواع الورد | إدارة مخزون الورد', 'flowers.products.index'))->name('products.index');
+        Route::get('/products/create', fn () => $flowersPage('إضافة نوع ورد | إدارة مخزون الورد', 'flowers.products.form'))->middleware('can:manage-flower-master-data')->name('products.create');
+        Route::get('/products/{product}/edit', fn (FlowerProduct $product) => $flowersPage('تعديل نوع ورد | إدارة مخزون الورد', 'flowers.products.form', compact('product')))->middleware('can:manage-flower-master-data')->name('products.edit');
+        Route::get('/products/{product}/opening-stock', fn (FlowerProduct $product) => $flowersPage('رصيد افتتاحي | إدارة مخزون الورد', 'flowers.products.opening-stock', compact('product')))->middleware('can:register-flower-opening-stock')->name('products.opening');
+        Route::get('/products/{product}', fn (FlowerProduct $product) => $flowersPage('تفاصيل نوع ورد | إدارة مخزون الورد', 'flowers.products.show', compact('product')))->name('products.show');
+
+        Route::get('/suppliers', fn () => $flowersPage('موردو الورد | إدارة مخزون الورد', 'flowers.suppliers.index'))->name('suppliers.index');
+        Route::get('/suppliers/create', fn () => $flowersPage('إضافة مورد ورد | إدارة مخزون الورد', 'flowers.suppliers.form'))->middleware('can:manage-flower-master-data')->name('suppliers.create');
+        Route::get('/suppliers/{supplier}/edit', fn (Supplier $supplier) => $flowersPage('تعديل مورد ورد | إدارة مخزون الورد', 'flowers.suppliers.form', compact('supplier')))->middleware('can:manage-flower-master-data')->name('suppliers.edit');
+
+        Route::get('/receipts', fn () => $flowersPage('سجل استلامات الورد | إدارة مخزون الورد', 'flowers.receipts.index'))->name('receipts.index');
+        Route::get('/receipts/create', fn () => $flowersPage('استلام وإضافة مخزون الورد | إدارة مخزون الورد', 'flowers.receipts.form'))->middleware('can:operate-flower-receipts')->name('receipts.create');
+        Route::get('/receipts/{receipt}/edit', fn (FlowerReceipt $receipt) => $flowersPage('تعديل استلام ورد | إدارة مخزون الورد', 'flowers.receipts.form', compact('receipt')))->middleware('can:operate-flower-receipts')->name('receipts.edit');
+        Route::get('/receipts/{receipt}', fn (FlowerReceipt $receipt) => $flowersPage('تفاصيل استلام ورد | إدارة مخزون الورد', 'flowers.receipts.show', compact('receipt')))->name('receipts.show');
+
+        Route::get('/inventory', fn () => $flowersPage('المخزون الحالي | إدارة مخزون الورد', 'flowers.inventory.index'))->name('inventory.index');
+        Route::get('/inventory/{product}/movements', fn (FlowerProduct $product) => $flowersPage('حركة نوع الورد | إدارة مخزون الورد', 'flowers.inventory.movement-history', compact('product')))->name('inventory.movements');
+        Route::get('/inventory/{product}/receipt-age', fn (FlowerProduct $product) => $flowersPage('سجل وصول نوع الورد | إدارة مخزون الورد', 'flowers.inventory.receipt-age', compact('product')))->name('inventory.receipt-age');
+
+        Route::get('/waste', fn () => $flowersPage('سجل تالف الورد | إدارة مخزون الورد', 'flowers.waste.index'))->name('waste.index');
+        Route::get('/waste/create', fn () => $flowersPage('تسجيل تالف ورد | إدارة مخزون الورد', 'flowers.waste.form'))->middleware('can:register-flower-waste')->name('waste.create');
+        Route::get('/exits', fn () => $flowersPage('خروج الورد | إدارة مخزون الورد', 'flowers.exits.index'))->name('exits.index');
+        Route::get('/exits/create', fn () => $flowersPage('تسجيل خروج ورد | إدارة مخزون الورد', 'flowers.exits.form'))->middleware('can:operate-flower-exits')->name('exits.create');
     });
 });

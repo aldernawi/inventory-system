@@ -10,12 +10,24 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
+use LogicException;
 
 #[Fillable(['flower_product_id', 'quantity', 'exit_date', 'exit_type', 'recipient_name', 'notes', 'status', 'created_by', 'confirmed_by', 'confirmed_at', 'cancelled_by', 'cancelled_at', 'cancellation_reason'])]
 class FlowerExit extends Model
 {
     /** @use HasFactory<FlowerExitFactory> */
     use HasFactory;
+
+    protected static function booted(): void
+    {
+        static::updating(function (): never {
+            throw new LogicException('Confirmed flower exits are immutable.');
+        });
+
+        static::deleting(function (): never {
+            throw new LogicException('Confirmed flower exits cannot be deleted.');
+        });
+    }
 
     protected function casts(): array
     {

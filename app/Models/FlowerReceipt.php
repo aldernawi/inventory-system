@@ -9,12 +9,28 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use LogicException;
 
 #[Fillable(['receipt_number', 'supplier_id', 'supplier_invoice_number', 'receipt_date', 'status', 'notes', 'created_by', 'updated_by', 'confirmed_by', 'confirmed_at', 'cancelled_by', 'cancelled_at', 'cancellation_reason'])]
 class FlowerReceipt extends Model
 {
     /** @use HasFactory<FlowerReceiptFactory> */
     use HasFactory;
+
+    protected static function booted(): void
+    {
+        static::updating(function (self $receipt): void {
+            if ($receipt->getRawOriginal('status') !== ReceiptStatus::Draft->value) {
+                throw new LogicException('Confirmed flower receipts are immutable.');
+            }
+        });
+
+        static::deleting(function (self $receipt): void {
+            if ($receipt->status !== ReceiptStatus::Draft) {
+                throw new LogicException('Confirmed flower receipts cannot be deleted.');
+            }
+        });
+    }
 
     protected function casts(): array
     {
