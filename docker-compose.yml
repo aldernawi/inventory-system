@@ -26,7 +26,7 @@ services:
       DB_USERNAME: ${MYSQL_USER:?Set MYSQL_USER in .env.docker}
       DB_PASSWORD: ${MYSQL_PASSWORD:?Set MYSQL_PASSWORD in .env.docker}
       DB_CHARSET: utf8mb4
-      DB_COLLATION: utf8mb4_unicode_ci
+      DB_COLLATION: utf8mb4_0900_ai_ci
       CACHE_STORE: ${CACHE_STORE:-database}
       SESSION_DRIVER: ${SESSION_DRIVER:-database}
       QUEUE_CONNECTION: ${QUEUE_CONNECTION:-database}
@@ -46,7 +46,7 @@ services:
     restart: unless-stopped
     command:
       - --character-set-server=utf8mb4
-      - --collation-server=utf8mb4_unicode_ci
+      - --collation-server=utf8mb4_0900_ai_ci
     environment:
       MYSQL_DATABASE: ${MYSQL_DATABASE:?Set MYSQL_DATABASE in .env.docker}
       MYSQL_USER: ${MYSQL_USER:?Set MYSQL_USER in .env.docker}
