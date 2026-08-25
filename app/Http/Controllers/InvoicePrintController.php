@@ -11,7 +11,7 @@ class InvoicePrintController extends Controller
     public function salami(SalamiInvoice $invoice): View
     {
         return view('salami.invoices.print', [
-            'invoice' => $invoice->load(['customer', 'items.product', 'createdBy', 'confirmedBy', 'cancelledBy']),
+            'invoice' => $invoice->load(['customer', 'deliveryAgent', 'items.product', 'createdBy', 'confirmedBy', 'cancelledBy']),
         ]);
     }
 

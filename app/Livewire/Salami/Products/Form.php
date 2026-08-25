@@ -18,7 +18,7 @@ class Form extends Component
 
     public string $code = '';
 
-    public string $unit = '';
+    public string $unit = 'قطعة';
 
     public string $purchasePrice = '';
 

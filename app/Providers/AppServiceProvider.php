@@ -3,9 +3,11 @@
 namespace App\Providers;
 
 use App\Models\FlowerExit;
+use App\Models\FlowerInvoice;
 use App\Models\FlowerInvoiceItem;
 use App\Models\FlowerProduct;
 use App\Models\FlowerReceiptItem;
+use App\Models\SalamiInvoice;
 use App\Models\SalamiInvoiceItem;
 use App\Models\SalamiProduct;
 use App\Models\SalamiReceiptItem;
@@ -14,6 +16,7 @@ use App\Models\StockOpening;
 use App\Models\StockWaste;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 
@@ -32,6 +35,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Blade::directive('quantity', fn (string $expression): string => "<?php echo \\App\\Support\\DisplayNumber::quantity($expression); ?>");
+        Blade::directive('money', fn (string $expression): string => "<?php echo \\App\\Support\\DisplayNumber::money($expression); ?>");
         Gate::define('manage-salami-master-data', fn (User $user): bool => $user->isAdmin());
         Gate::define('register-salami-opening-stock', fn (User $user): bool => $user->isAdmin());
         Gate::define('operate-salami-receipts', fn (User $user): bool => $user->is_active);
@@ -57,6 +62,8 @@ class AppServiceProvider extends ServiceProvider
             'flower_receipt_item' => FlowerReceiptItem::class,
             'salami_invoice_item' => SalamiInvoiceItem::class,
             'flower_invoice_item' => FlowerInvoiceItem::class,
+            'salami_invoice' => SalamiInvoice::class,
+            'flower_invoice' => FlowerInvoice::class,
             'flower_exit' => FlowerExit::class,
             'stock_waste' => StockWaste::class,
             'stock_adjustment' => StockAdjustment::class,

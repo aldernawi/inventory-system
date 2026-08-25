@@ -34,6 +34,10 @@ Route::middleware(['auth', 'active'])->group(function (): void {
         Route::get('/customers/{customer}/edit', [ModulePageController::class, 'salamiCustomer'])->defaults('page', 'edit')->middleware('can:manage-salami-master-data')->name('customers.edit');
         Route::get('/customers/{customer}', [ModulePageController::class, 'salamiCustomer'])->defaults('page', 'show')->name('customers.show');
 
+        Route::view('/delivery-agents', 'salami.livewire-page', ['title' => 'مندوبو التوصيل | إدارة مخزن السلامي', 'component' => 'salami.delivery-agents.index', 'parameters' => []])->middleware('can:manage-salami-master-data')->name('delivery-agents.index');
+        Route::view('/delivery-agents/create', 'salami.livewire-page', ['title' => 'إضافة مندوب | إدارة مخزن السلامي', 'component' => 'salami.delivery-agents.form', 'parameters' => []])->middleware('can:manage-salami-master-data')->name('delivery-agents.create');
+        Route::get('/delivery-agents/{deliveryAgent}/edit', [ModulePageController::class, 'salamiDeliveryAgent'])->middleware('can:manage-salami-master-data')->name('delivery-agents.edit');
+
         Route::view('/receipts', 'salami.livewire-page', ['title' => 'سجل الاستلامات | إدارة مخزن السلامي', 'component' => 'salami.receipts.index', 'parameters' => []])->name('receipts.index');
         Route::view('/receipts/create', 'salami.livewire-page', ['title' => 'إضافة مخزون | إدارة مخزن السلامي', 'component' => 'salami.receipts.form', 'parameters' => []])->middleware('can:operate-salami-receipts')->name('receipts.create');
         Route::get('/receipts/{receipt}/edit', [ModulePageController::class, 'salamiReceipt'])->defaults('page', 'edit')->middleware('can:operate-salami-receipts')->name('receipts.edit');

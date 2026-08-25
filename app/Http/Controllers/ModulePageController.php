@@ -6,6 +6,7 @@ use App\Models\FlowerInvoice;
 use App\Models\FlowerProduct;
 use App\Models\FlowerReceipt;
 use App\Models\SalamiCustomer;
+use App\Models\SalamiDeliveryAgent;
 use App\Models\SalamiInvoice;
 use App\Models\SalamiProduct;
 use App\Models\SalamiReceipt;
@@ -34,6 +35,11 @@ class ModulePageController extends Controller
             'edit' => ['تعديل محل | إدارة مخزن السلامي', 'salami.customers.form'],
             'show' => ['تفاصيل محل | إدارة مخزن السلامي', 'salami.customers.show'],
         }, compact('customer'));
+    }
+
+    public function salamiDeliveryAgent(SalamiDeliveryAgent $deliveryAgent): View
+    {
+        return $this->salami(['تعديل مندوب | إدارة مخزن السلامي', 'salami.delivery-agents.form'], compact('deliveryAgent'));
     }
 
     public function salamiReceipt(SalamiReceipt $receipt, string $page): View

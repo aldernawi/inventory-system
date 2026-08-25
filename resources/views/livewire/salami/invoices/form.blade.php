@@ -14,9 +14,18 @@
         <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
             <h2 class="font-bold text-slate-950">بيانات الفاتورة</h2>
             <div class="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                <label class="block text-sm font-bold text-slate-700">مندوب التوصيل
+                    <select wire:model.live="deliveryAgentId" class="mt-2 w-full rounded-lg border-slate-300 focus:border-amber-500 focus:ring-amber-500">
+                        <option value="">اختر المندوب أولاً</option>
+                        @foreach ($deliveryAgents as $deliveryAgent)
+                            <option value="{{ $deliveryAgent->id }}">{{ $deliveryAgent->name }}</option>
+                        @endforeach
+                    </select>
+                    @error('deliveryAgentId') <span class="mt-1 block text-xs text-rose-600">{{ $message }}</span> @enderror
+                </label>
                 <label class="block text-sm font-bold text-slate-700">المحل / العميل
                     <select wire:model="customerId" class="mt-2 w-full rounded-lg border-slate-300 focus:border-amber-500 focus:ring-amber-500">
-                        <option value="">اختر المحل</option>
+                        <option value="">{{ $deliveryAgentId === '' ? 'اختر المندوب أولاً' : 'اختر المحل' }}</option>
                         @foreach ($customers as $customer)
                             <option value="{{ $customer->id }}">{{ $customer->name }}</option>
                         @endforeach
@@ -51,7 +60,7 @@
 
         <div class="space-y-4">
             <div class="flex items-center justify-between">
-                <div><h2 class="font-bold text-slate-950">بنود الفاتورة</h2><p class="mt-1 text-sm text-slate-600">لا يمكن تكرار الصنف في الفاتورة نفسها.</p></div>
+                <div><h2 class="font-bold text-slate-950">بنود الفاتورة</h2><p class="mt-1 text-sm text-slate-600">اختر قطعة أو صندوق؛ عند الصندوق أدخل عدد القطع الفعلي داخله لهذه العملية.</p></div>
                 <button type="button" wire:click="addItem" class="rounded-lg border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-bold text-amber-800 hover:bg-amber-100">إضافة صنف</button>
             </div>
             @error('items') <p class="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{{ $message }}</p> @enderror
@@ -75,9 +84,17 @@
                             @error("items.$index.product_id") <span class="mt-1 block text-xs text-rose-600">{{ $message }}</span> @enderror
                         </label>
                         <div class="rounded-xl bg-slate-50 p-3 text-sm text-slate-600 sm:col-span-2">
-                            <p><span class="font-bold text-slate-700">الوحدة:</span> {{ $selectedProduct?->unit ?? '—' }}</p>
+                            <p><span class="font-bold text-slate-700">وحدة رصيد الصنف:</span> {{ $selectedProduct?->unit ?? '—' }}</p>
                             <p class="mt-1"><span class="font-bold text-slate-700">الرصيد الحالي:</span> {{ $selectedProduct?->current_quantity ?? '—' }}</p>
                         </div>
+                        <label class="block text-sm font-bold text-slate-700">وحدة البيع
+                            <select wire:model.live="items.{{ $index }}.unit_type" class="mt-2 w-full rounded-lg border-slate-300 focus:border-amber-500 focus:ring-amber-500"><option value="piece">قطعة</option><option value="box">صندوق</option></select>
+                            @error("items.$index.unit_type") <span class="mt-1 block text-xs text-rose-600">{{ $message }}</span> @enderror
+                        </label>
+                        @if(($item['unit_type'] ?? 'piece') === 'box')<label class="block text-sm font-bold text-slate-700">قطع داخل الصندوق
+                            <input wire:model.live.debounce.250ms="items.{{ $index }}.pieces_per_box" inputmode="numeric" type="text" class="mt-2 w-full rounded-lg border-slate-300 focus:border-amber-500 focus:ring-amber-500">
+                            @error("items.$index.pieces_per_box") <span class="mt-1 block text-xs text-rose-600">{{ $message }}</span> @enderror
+                        </label>@endif
                         <label class="block text-sm font-bold text-slate-700">الكمية
                             <input wire:model.live.debounce.250ms="items.{{ $index }}.quantity" inputmode="decimal" type="text" class="mt-2 w-full rounded-lg border-slate-300 focus:border-amber-500 focus:ring-amber-500">
                             @error("items.$index.quantity") <span class="mt-1 block text-xs text-rose-600">{{ $message }}</span> @enderror
@@ -90,9 +107,13 @@
                             <p class="text-xs font-bold text-amber-800">إجمالي البند</p>
                             <p class="mt-1 text-xl font-bold text-amber-950">{{ $itemPreview['line_total'] }}</p>
                         </div>
+                        <div class="rounded-xl border border-sky-100 bg-sky-50 p-3 text-sm">
+                            <p class="text-xs font-bold text-sky-800">خصم المخزون</p>
+                            <p class="mt-1 text-lg font-bold text-sky-950">{{ $itemPreview['stock_quantity'] ?? '0.000' }} {{ $selectedProduct?->unit ?? 'قطعة' }}</p>
+                        </div>
                         <div class="rounded-xl bg-slate-50 p-3 text-sm text-slate-600">
                             <p class="text-xs font-bold text-slate-500">الرصيد المتوقع بعد البيع</p>
-                            <p class="mt-1 text-lg font-bold text-slate-950">{{ $selectedProduct && $preview['valid'] ? \App\Support\Quantity::from($selectedProduct->current_quantity)->minus(\App\Support\Quantity::from($item['quantity'] ?: '0'))->toString() : '—' }}</p>
+                            <p class="mt-1 text-lg font-bold text-slate-950">{{ $selectedProduct && $preview['valid'] ? \App\Support\Quantity::from($selectedProduct->current_quantity)->minus(\App\Support\Quantity::from($itemPreview['stock_quantity'] ?? '0'))->toString() : '—' }}</p>
                         </div>
                     </div>
                 </article>
@@ -110,8 +131,8 @@
 
         @error('invoice') <div class="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">{{ $message }}</div> @enderror
         <div class="sticky bottom-3 flex flex-wrap gap-3 rounded-2xl border border-slate-200 bg-white/95 p-4 shadow-lg backdrop-blur">
-            <button wire:click="saveDraft" wire:loading.attr="disabled" type="button" class="rounded-lg border border-slate-300 px-5 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50">حفظ كمسودة</button>
-            <button wire:click="confirm" wire:loading.attr="disabled" type="button" class="rounded-lg bg-amber-500 px-5 py-2.5 text-sm font-bold text-amber-950 hover:bg-amber-400">اعتماد وخصم المخزون</button>
+            <button wire:click.prevent="saveDraft" wire:loading.attr="disabled" wire:target="saveDraft" type="button" class="rounded-lg border border-slate-300 px-5 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50">حفظ كمسودة</button>
+            <button wire:click.prevent="confirm" wire:loading.attr="disabled" wire:target="confirm" type="button" class="rounded-lg bg-amber-500 px-5 py-2.5 text-sm font-bold text-amber-950 hover:bg-amber-400">اعتماد وخصم المخزون</button>
             <span wire:loading class="self-center text-xs font-bold text-amber-800">جارٍ الحفظ…</span>
         </div>
     </form>

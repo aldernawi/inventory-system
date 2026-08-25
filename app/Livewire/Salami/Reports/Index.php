@@ -6,6 +6,7 @@ use App\Enums\MovementType;
 use App\Enums\ReceiptStatus;
 use App\Livewire\Concerns\AuthorizesSalamiAccess;
 use App\Models\SalamiCustomer;
+use App\Models\SalamiDeliveryAgent;
 use App\Models\SalamiInvoice;
 use App\Models\SalamiProduct;
 use App\Models\SalamiReceiptItem;
@@ -29,6 +30,9 @@ class Index extends Component
 
     #[Url]
     public string $customerId = '';
+
+    #[Url]
+    public string $deliveryAgentId = '';
 
     #[Url]
     public string $from = '';
@@ -112,6 +116,7 @@ class Index extends Component
 
         return view('livewire.salami.reports.index', [
             'customers' => SalamiCustomer::query()->orderBy('name')->get(['id', 'name']),
+            'deliveryAgents' => SalamiDeliveryAgent::query()->orderBy('name')->get(['id', 'name']),
             'movementTypes' => MovementType::cases(),
             'products' => SalamiProduct::query()->orderBy('name')->get(['id', 'name']),
             'rows' => $this->rows(),
@@ -173,8 +178,9 @@ class Index extends Component
     private function salesRows(): mixed
     {
         return SalamiInvoice::query()
-            ->with('customer')
+            ->with(['customer', 'deliveryAgent'])
             ->when($this->customerId !== '', fn (Builder $query) => $query->where('customer_id', $this->customerId))
+            ->when($this->deliveryAgentId !== '', fn (Builder $query) => $query->where('delivery_agent_id', $this->deliveryAgentId))
             ->when($this->productId !== '', fn (Builder $query) => $query->whereHas('items', fn (Builder $query) => $query->where('product_id', $this->productId)))
             ->when($this->paymentStatus !== '', fn (Builder $query) => $query->where('payment_status', $this->paymentStatus))
             ->when($this->from !== '', fn (Builder $query) => $query->whereDate('invoice_date', '>=', $this->from))

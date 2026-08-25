@@ -2,15 +2,19 @@
 
 namespace App\Livewire\Salami\Invoices;
 
+use App\Enums\SalamiItemUnit;
 use App\Exceptions\Inventory\InvalidStockQuantityException;
 use App\Exceptions\Salami\InvoiceException;
 use App\Livewire\Concerns\AuthorizesSalamiAccess;
 use App\Models\SalamiCustomer;
+use App\Models\SalamiDeliveryAgent;
 use App\Models\SalamiInvoice;
 use App\Models\SalamiProduct;
 use App\Services\Salami\InvoiceService;
 use App\Support\Quantity;
+use App\Support\SalamiUnitConversion;
 use Illuminate\Contracts\View\View;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Livewire\Component;
 
@@ -20,10 +24,12 @@ class Form extends Component
 
     public string $customerId = '';
 
+    public string $deliveryAgentId = '';
+
     public string $discountAmount = '0.000';
 
     /**
-     * @var list<array{product_id: string, quantity: string, unit_price: string}>
+     * @var list<array{product_id: string, unit_type: string, pieces_per_box: string, quantity: string, unit_price: string}>
      */
     public array $items = [];
 
@@ -35,7 +41,9 @@ class Form extends Component
 
     public string $paidAmount = '0.000';
 
-    public string $paymentType = 'cash';
+    // Start new invoices as credit so an empty draft can be saved safely.
+    // Cash invoices still require the employee to enter the full paid amount.
+    public string $paymentType = 'credit';
 
     public function mount(?SalamiInvoice $invoice = null): void
     {
@@ -55,6 +63,7 @@ class Form extends Component
             return;
         }
 
+        $this->deliveryAgentId = (string) ($invoice->delivery_agent_id ?? '');
         $this->customerId = (string) $invoice->customer_id;
         $this->invoiceDate = $invoice->invoice_date->toDateString();
         $this->paymentType = $invoice->payment_type->value;
@@ -66,6 +75,8 @@ class Form extends Component
             ->get()
             ->map(fn ($item): array => [
                 'product_id' => (string) $item->product_id,
+                'unit_type' => SalamiItemUnit::fromStoredLabel($item->unit)->value,
+                'pieces_per_box' => $item->unit === 'صندوق' ? $item->conversion_factor : '1',
                 'quantity' => $item->quantity,
                 'unit_price' => $item->unit_price,
             ])
@@ -99,6 +110,11 @@ class Form extends Component
         if (isset($this->items[$index]) && $product instanceof SalamiProduct) {
             $this->items[$index]['unit_price'] = $product->sale_price ?? '0.000';
         }
+    }
+
+    public function updatedDeliveryAgentId(): void
+    {
+        $this->customerId = '';
     }
 
     public function saveDraft(InvoiceService $invoiceService): mixed
@@ -157,12 +173,17 @@ class Form extends Component
                     throw new InvalidStockQuantityException('Invalid invoice item.');
                 }
 
+                $conversion = SalamiUnitConversion::fromInput(
+                    (string) ($item['unit_type'] ?? 'piece'),
+                    (string) ($item['quantity'] ?? '0'),
+                    $item['pieces_per_box'] ?? null,
+                );
                 $lineTotal = $quantity->multipliedBy($price);
                 $subtotal = $subtotal->plus($lineTotal);
-                $itemPreviews[] = ['line_total' => $lineTotal->toString()];
-            } catch (InvalidStockQuantityException) {
+                $itemPreviews[] = ['line_total' => $lineTotal->toString(), 'stock_quantity' => $conversion['stock_quantity']->toString()];
+            } catch (InvalidStockQuantityException|ValidationException) {
                 $valid = false;
-                $itemPreviews[] = ['line_total' => '0.000'];
+                $itemPreviews[] = ['line_total' => '0.000', 'stock_quantity' => '0.000'];
             }
         }
 
@@ -207,7 +228,10 @@ class Form extends Component
             'paidAmount' => ['required', 'regex:/^\d+(?:\.\d{1,3})?$/'],
             'notes' => ['nullable', 'string'],
             'items' => ['required', 'array', 'min:1'],
+            'deliveryAgentId' => ['required', 'integer', Rule::exists('salami_delivery_agents', 'id')->where('is_active', true)],
             'items.*.product_id' => ['required', 'integer', 'distinct', 'exists:salami_products,id'],
+            'items.*.unit_type' => ['required', 'in:piece,box'],
+            'items.*.pieces_per_box' => ['nullable', 'regex:/^[1-9]\d*$/'],
             'items.*.quantity' => ['required', 'regex:/^\d+(?:\.\d{1,3})?$/'],
             'items.*.unit_price' => ['required', 'regex:/^\d+(?:\.\d{1,3})?$/'],
         ];
@@ -228,11 +252,18 @@ class Form extends Component
             ->get();
         $customers = SalamiCustomer::query()
             ->where('is_active', true)
+            ->when($this->deliveryAgentId !== '', fn ($query) => $query->where('delivery_agent_id', $this->deliveryAgentId))
+            ->orderBy('name')
+            ->get();
+        $deliveryAgents = SalamiDeliveryAgent::query()
+            ->where('is_active', true)
+            ->when($this->deliveryAgentId !== '', fn ($query) => $query->orWhere('id', $this->deliveryAgentId))
             ->orderBy('name')
             ->get();
 
         return view('livewire.salami.invoices.form', [
             'customers' => $customers,
+            'deliveryAgents' => $deliveryAgents,
             'productLookup' => $products->keyBy('id'),
             'products' => $products,
         ]);
@@ -244,6 +275,7 @@ class Form extends Component
         $validated = $this->validate();
         $attributes = [
             'customer_id' => $validated['customerId'],
+            'delivery_agent_id' => $validated['deliveryAgentId'],
             'invoice_date' => $validated['invoiceDate'],
             'payment_type' => $validated['paymentType'],
             'discount_amount' => $validated['discountAmount'],
@@ -267,12 +299,14 @@ class Form extends Component
     }
 
     /**
-     * @return array{product_id: string, quantity: string, unit_price: string}
+     * @return array{product_id: string, unit_type: string, pieces_per_box: string, quantity: string, unit_price: string}
      */
     private function emptyItem(): array
     {
         return [
             'product_id' => '',
+            'unit_type' => 'piece',
+            'pieces_per_box' => '1',
             'quantity' => '1.000',
             'unit_price' => '0.000',
         ];

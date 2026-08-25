@@ -20,6 +20,7 @@ class SalamiInvoiceFactory extends Factory
         return [
             'invoice_number' => 'SAL-I-'.fake()->unique()->numerify('######'),
             'customer_id' => SalamiCustomer::factory(),
+            'delivery_agent_id' => null,
             'invoice_date' => today(),
             'payment_type' => PaymentType::Cash,
             'payment_status' => PaymentStatus::Paid,

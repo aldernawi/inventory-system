@@ -15,7 +15,7 @@ class SalamiProductFactory extends Factory
         return [
             'name' => 'سلامي '.fake()->unique()->word(),
             'code' => 'SAL-'.fake()->unique()->numerify('####'),
-            'unit' => 'كرتونة',
+            'unit' => 'صندوق',
             'current_quantity' => '0.000',
             'purchase_price' => '80.000',
             'sale_price' => '100.000',

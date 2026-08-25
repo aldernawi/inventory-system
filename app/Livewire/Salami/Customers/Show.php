@@ -18,7 +18,7 @@ class Show extends Component
     public function render(): View
     {
         return view('livewire.salami.customers.show', [
-            'customer' => $this->customer->fresh(),
+            'customer' => $this->customer->fresh('deliveryAgent'),
         ]);
     }
 }

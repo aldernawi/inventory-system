@@ -12,15 +12,18 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use LogicException;
 
-#[Fillable(['invoice_number', 'customer_id', 'invoice_date', 'payment_type', 'payment_status', 'subtotal_amount', 'discount_amount', 'total_amount', 'paid_amount', 'remaining_amount', 'status', 'notes', 'created_by', 'updated_by', 'confirmed_by', 'confirmed_at', 'cancelled_by', 'cancelled_at', 'cancellation_reason'])]
+#[Fillable(['invoice_number', 'customer_id', 'delivery_agent_id', 'invoice_date', 'payment_type', 'payment_status', 'subtotal_amount', 'discount_amount', 'total_amount', 'paid_amount', 'remaining_amount', 'status', 'notes', 'created_by', 'updated_by', 'confirmed_by', 'confirmed_at', 'cancelled_by', 'cancelled_at', 'cancellation_reason'])]
 class SalamiInvoice extends Model
 {
     /** @use HasFactory<SalamiInvoiceFactory> */
     use HasFactory;
 
     private static bool $allowsConfirmedMutation = false;
+
+    private static bool $allowsPaymentMutation = false;
 
     protected static function booted(): void
     {
@@ -32,6 +35,19 @@ class SalamiInvoice extends Model
             if (self::$allowsConfirmedMutation
                 && $invoice->getRawOriginal('status') === InvoiceStatus::Confirmed->value
                 && $invoice->status === InvoiceStatus::Cancelled) {
+                return;
+            }
+
+            if (self::$allowsPaymentMutation
+                && $invoice->getRawOriginal('status') === InvoiceStatus::Confirmed->value
+                && $invoice->status === InvoiceStatus::Confirmed
+                && array_diff(array_keys($invoice->getDirty()), [
+                    'paid_amount',
+                    'remaining_amount',
+                    'payment_status',
+                    'updated_by',
+                    'updated_at',
+                ]) === []) {
                 return;
             }
 
@@ -62,6 +78,23 @@ class SalamiInvoice extends Model
         }
     }
 
+    /**
+     * @template T
+     *
+     * @param  Closure(): T  $callback
+     * @return T
+     */
+    public static function allowPaymentMutation(Closure $callback): mixed
+    {
+        self::$allowsPaymentMutation = true;
+
+        try {
+            return $callback();
+        } finally {
+            self::$allowsPaymentMutation = false;
+        }
+    }
+
     protected function casts(): array
     {
         return [
@@ -82,6 +115,11 @@ class SalamiInvoice extends Model
     public function customer(): BelongsTo
     {
         return $this->belongsTo(SalamiCustomer::class, 'customer_id');
+    }
+
+    public function deliveryAgent(): BelongsTo
+    {
+        return $this->belongsTo(SalamiDeliveryAgent::class, 'delivery_agent_id');
     }
 
     public function items(): HasMany
@@ -107,5 +145,10 @@ class SalamiInvoice extends Model
     public function cancelledBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'cancelled_by');
+    }
+
+    public function payments(): MorphMany
+    {
+        return $this->morphMany(InvoicePayment::class, 'invoiceable');
     }
 }

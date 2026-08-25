@@ -1,8 +1,66 @@
+@import '@fontsource/ibm-plex-sans-arabic/400.css';
+@import '@fontsource/ibm-plex-sans-arabic/500.css';
+@import '@fontsource/ibm-plex-sans-arabic/600.css';
+@import '@fontsource/ibm-plex-sans-arabic/700.css';
 @import 'tailwindcss';
 
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
 
 @theme {
-    --font-sans: Tahoma, Arial, 'Segoe UI', ui-sans-serif, system-ui, sans-serif;
+    --font-sans: 'IBM Plex Sans Arabic', Tahoma, Arial, 'Segoe UI', ui-sans-serif, system-ui, sans-serif;
+}
+
+@layer base {
+    :root { --app-bg: #f6f8fb; --surface: #fff; --surface-muted: #f8fafc; --border: #e2e8f0; --text: #172033; --text-muted: #64748b; --danger: #dc2626; --success: #15803d; --warning: #b45309; }
+    body { background: var(--app-bg); color: var(--text); }
+    input:not([type='checkbox']):not([type='radio']), select, textarea { min-height: 2.75rem; border: 1px solid #cbd5e1; border-radius: .75rem; background: #fff; padding: .65rem .8rem; color: #172033; transition: border-color .15s, box-shadow .15s, background-color .15s; }
+    input:not([type='checkbox']):not([type='radio']):hover, select:hover, textarea:hover { border-color: #94a3b8; }
+    input:focus, select:focus, textarea:focus { border-color: var(--module-accent, #475569); box-shadow: 0 0 0 3px color-mix(in srgb, var(--module-accent, #475569) 15%, transparent); outline: none; }
+    textarea { min-height: auto; }
+    th { font-weight: 600; }
+}
+
+@layer components {
+    .app-shell { --module-accent: #475569; }
+    @media (min-width: 64rem) { .app-shell > .min-w-0 { min-width: 0; flex: 1 1 0%; } }
+    .app-shell--salami { --module-accent: #d97706; --module-soft: #fffbeb; --module-strong: #92400e; }
+    .app-shell--flowers { --module-accent: #e11d48; --module-soft: #fff1f2; --module-strong: #9f1239; }
+    .app-card { border: 1px solid var(--border); border-radius: 1rem; background: var(--surface); box-shadow: 0 1px 2px rgb(15 23 42 / .04); }
+    .app-page-header { display: flex; align-items: end; justify-content: space-between; gap: 1rem; }
+    .app-eyebrow { color: var(--module-strong); font-size: .8125rem; font-weight: 600; }
+    .app-title { margin-top: .25rem; color: #0f172a; font-size: 1.5rem; font-weight: 700; line-height: 1.45; }
+    .app-description { margin-top: .25rem; color: var(--text-muted); font-size: .875rem; line-height: 1.75; }
+    .app-input { width: 100%; border-radius: .625rem; border: 1px solid #cbd5e1; padding: .625rem .75rem; font-size: .875rem; outline: none; transition: border-color .15s, box-shadow .15s; }
+    .app-button { display: inline-flex; min-height: 2.75rem; align-items: center; justify-content: center; border-radius: .625rem; padding: .625rem 1rem; font-size: .875rem; font-weight: 600; transition: background-color .15s, border-color .15s, color .15s, transform .15s; }
+    .app-button:hover { transform: translateY(-1px); }
+    .app-button-primary { background: var(--module-accent); color: white; box-shadow: 0 1px 2px rgb(15 23 42 / .08); }
+    .app-button-primary:hover { filter: brightness(.94); }
+    .app-button-secondary { border: 1px solid #cbd5e1; background: white; color: #334155; }
+    .app-button-secondary:hover { background: #f8fafc; border-color: #94a3b8; }
+    .app-button-danger { background: #dc2626; color: white; }
+    .app-shell input:not([type='checkbox']):not([type='radio']), .app-shell select, .app-shell textarea { min-height: 2.75rem; border: 1px solid #cbd5e1; border-radius: .75rem; background: #fff; padding: .65rem .8rem; color: #172033; }
+    .app-shell input:not([type='checkbox']):not([type='radio']):hover, .app-shell select:hover, .app-shell textarea:hover { border-color: #94a3b8; }
+    .app-shell input:not([type='checkbox']):not([type='radio']):focus, .app-shell select:focus, .app-shell textarea:focus { border-color: var(--module-accent, #475569); box-shadow: 0 0 0 3px color-mix(in srgb, var(--module-accent, #475569) 15%, transparent); outline: none; }
+    .app-table thead { background: #f8fafc; color: #64748b; }
+    .app-table th { padding: .875rem 1rem; font-size: .75rem; }
+    .app-table td { padding: .875rem 1rem; }
+    .app-table tbody tr { transition: background-color .15s; }
+    .app-table tbody tr:hover { background: #f8fafc; }
+    .app-badge { display: inline-flex; align-items: center; border-radius: 9999px; padding: .25rem .625rem; font-size: .75rem; font-weight: 600; white-space: nowrap; }
+    .app-empty { padding: 2.5rem 1.25rem; text-align: center; color: var(--text-muted); font-size: .875rem; }
+    .app-readonly { border: 1px solid #e2e8f0; border-radius: .75rem; background: #f8fafc; padding: .75rem; }
+    .app-metric { border: 1px solid var(--border); border-radius: 1rem; background: white; padding: 1rem 1.125rem; box-shadow: 0 1px 2px rgb(15 23 42 / .035); }
+    .app-metric-label { color: #64748b; font-size: .8125rem; font-weight: 500; }
+    .app-metric-value { margin-top: .375rem; color: #0f172a; font-size: 1.625rem; font-weight: 700; line-height: 1.2; }
+    .app-shell .overflow-x-auto > table { width: 100%; border-collapse: separate; border-spacing: 0; }
+    .app-shell .overflow-x-auto > table thead { background: #f8fafc; color: #64748b; }
+    .app-shell .overflow-x-auto > table th { padding-top: .875rem; padding-bottom: .875rem; font-size: .75rem; font-weight: 600; white-space: nowrap; }
+    .app-shell .overflow-x-auto > table td { padding-top: .875rem; padding-bottom: .875rem; }
+    .app-shell .overflow-x-auto > table tbody tr { transition: background-color .15s; }
+    .app-shell .overflow-x-auto > table tbody tr:hover { background: #f8fafc; }
+    .app-shell .space-y-6 > .rounded-2xl:not(.sticky) { box-shadow: 0 1px 2px rgb(15 23 42 / .04); }
+    .app-shell label { display: block; line-height: 1.6; }
+    .app-shell label > input:not([type='checkbox']):not([type='radio']), .app-shell label > select, .app-shell label > textarea { margin-top: .45rem; width: 100%; }
+    @media (max-width: 640px) { .app-page-header { align-items: stretch; flex-direction: column; } }
 }

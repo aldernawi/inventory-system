@@ -43,6 +43,7 @@ class Index extends Component
             ->when($this->search !== '', function ($query): void {
                 $query->where(function ($query): void {
                     $query->where('name', 'like', "%{$this->search}%")
+                        ->orWhere('company_name', 'like', "%{$this->search}%")
                         ->orWhere('code', 'like', "%{$this->search}%")
                         ->orWhere('color', 'like', "%{$this->search}%")
                         ->orWhere('grade', 'like', "%{$this->search}%");

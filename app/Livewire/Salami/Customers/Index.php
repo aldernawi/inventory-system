@@ -37,6 +37,7 @@ class Index extends Component
     public function render(): View
     {
         $customers = SalamiCustomer::query()
+            ->with('deliveryAgent')
             ->when($this->search !== '', function ($query): void {
                 $query->where(function ($query): void {
                     $query->where('name', 'like', "%{$this->search}%")

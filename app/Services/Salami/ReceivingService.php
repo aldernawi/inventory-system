@@ -3,6 +3,7 @@
 namespace App\Services\Salami;
 
 use App\Enums\ReceiptStatus;
+use App\Enums\SalamiItemUnit;
 use App\Enums\SupplierScope;
 use App\Exceptions\Salami\ReceivingException;
 use App\Models\SalamiProduct;
@@ -13,6 +14,7 @@ use App\Models\User;
 use App\Services\Inventory\StockService;
 use App\Support\Quantity;
 use App\Support\ReceivingQuantities;
+use App\Support\SalamiUnitConversion;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -124,11 +126,17 @@ class ReceivingService
                     $item->damaged_quantity,
                 );
 
-                $item->update($calculation);
+                $acceptedStockQuantity = Quantity::from($calculation['accepted_quantity'])
+                    ->multipliedBy(Quantity::from($item->conversion_factor));
+
+                $item->update([
+                    ...$calculation,
+                    'accepted_stock_quantity' => $acceptedStockQuantity->toString(),
+                ]);
 
                 $movement = $this->stockService->receipt(
                     $product,
-                    $calculation['accepted_quantity'],
+                    $acceptedStockQuantity,
                     $confirmedBy,
                     $item,
                     "استلام {$lockedReceipt->receipt_number}",
@@ -190,6 +198,7 @@ class ReceivingService
             }
 
             $productIds[] = $productId;
+
             $product = SalamiProduct::query()->find($productId);
 
             if (! $product instanceof SalamiProduct || ! $product->is_active) {
@@ -201,12 +210,17 @@ class ReceivingService
                 $item['received_quantity'] ?? '0',
                 $item['damaged_quantity'] ?? '0',
             );
+            $conversion = $this->conversionForItem($item, $index);
 
             $receipt->items()->create([
                 'product_id' => $product->getKey(),
                 'product_name' => $product->name,
-                'unit' => $product->unit,
+                'unit' => $conversion['unit']->label(),
+                'conversion_factor' => $conversion['factor']->toString(),
                 ...$calculation,
+                'accepted_stock_quantity' => Quantity::from($calculation['accepted_quantity'])
+                    ->multipliedBy($conversion['factor'])
+                    ->toString(),
                 'purchase_price' => $this->nullableDecimal($item['purchase_price'] ?? $product->purchase_price),
                 'notes' => $this->nullableText($item['notes'] ?? null),
             ]);
@@ -253,5 +267,29 @@ class ReceivingService
         }
 
         return $quantity->toString();
+    }
+
+    /**
+     * @param  array<string, mixed>  $item
+     * @return array{unit: SalamiItemUnit, factor: Quantity, stock_quantity: Quantity}
+     */
+    private function conversionForItem(array $item, int $index): array
+    {
+        try {
+            return SalamiUnitConversion::fromInput(
+                (string) ($item['unit_type'] ?? 'piece'),
+                (string) ($item['received_quantity'] ?? '0'),
+                $item['pieces_per_box'] ?? null,
+                false,
+            );
+        } catch (ValidationException $exception) {
+            $errors = [];
+
+            foreach ($exception->errors() as $field => $messages) {
+                $errors["items.{$index}.{$field}"] = $messages;
+            }
+
+            throw ValidationException::withMessages($errors);
+        }
     }
 }

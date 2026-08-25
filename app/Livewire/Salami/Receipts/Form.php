@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Salami\Receipts;
 
+use App\Enums\SalamiItemUnit;
 use App\Exceptions\Inventory\InvalidStockQuantityException;
 use App\Exceptions\Salami\ReceivingException;
 use App\Livewire\Concerns\AuthorizesSalamiAccess;
@@ -9,7 +10,9 @@ use App\Models\SalamiProduct;
 use App\Models\SalamiReceipt;
 use App\Models\Supplier;
 use App\Services\Salami\ReceivingService;
+use App\Support\Quantity;
 use App\Support\ReceivingQuantities;
+use App\Support\SalamiUnitConversion;
 use Illuminate\Contracts\View\View;
 use Illuminate\Validation\ValidationException;
 use Livewire\Component;
@@ -29,7 +32,7 @@ class Form extends Component
     public string $notes = '';
 
     /**
-     * @var list<array{product_id: string, expected_quantity: string, received_quantity: string, damaged_quantity: string, purchase_price: string, notes: string}>
+     * @var list<array{product_id: string, unit_type: string, pieces_per_box: string, expected_quantity: string, received_quantity: string, damaged_quantity: string, purchase_price: string, notes: string}>
      */
     public array $items = [];
 
@@ -60,6 +63,8 @@ class Form extends Component
             ->get()
             ->map(fn ($item): array => [
                 'product_id' => (string) $item->product_id,
+                'unit_type' => SalamiItemUnit::fromStoredLabel($item->unit)->value,
+                'pieces_per_box' => $item->unit === 'صندوق' ? $item->conversion_factor : '1',
                 'expected_quantity' => $item->expected_quantity,
                 'received_quantity' => $item->received_quantity,
                 'damaged_quantity' => $item->damaged_quantity,
@@ -144,12 +149,22 @@ class Form extends Component
     public function preview(array $item): array
     {
         try {
-            return [...ReceivingQuantities::calculate(
+            $calculation = ReceivingQuantities::calculate(
                 $item['expected_quantity'] ?? '0',
                 $item['received_quantity'] ?? '0',
                 $item['damaged_quantity'] ?? '0',
-            ), 'valid' => true];
-        } catch (InvalidStockQuantityException) {
+            );
+            $conversion = SalamiUnitConversion::fromInput(
+                (string) ($item['unit_type'] ?? 'piece'),
+                (string) ($item['received_quantity'] ?? '0'),
+                $item['pieces_per_box'] ?? null,
+                false,
+            );
+
+            return [...$calculation, 'accepted_stock_quantity' => Quantity::from($calculation['accepted_quantity'])
+                ->multipliedBy($conversion['factor'])
+                ->toString(), 'valid' => true];
+        } catch (InvalidStockQuantityException|ValidationException) {
             return [
                 'expected_quantity' => '0.000',
                 'received_quantity' => '0.000',
@@ -157,6 +172,7 @@ class Form extends Component
                 'shortage_quantity' => '0.000',
                 'surplus_quantity' => '0.000',
                 'accepted_quantity' => '0.000',
+                'accepted_stock_quantity' => '0.000',
                 'valid' => false,
             ];
         }
@@ -171,6 +187,8 @@ class Form extends Component
             'notes' => ['nullable', 'string'],
             'items' => ['required', 'array', 'min:1'],
             'items.*.product_id' => ['required', 'integer', 'distinct', 'exists:salami_products,id'],
+            'items.*.unit_type' => ['required', 'in:piece,box'],
+            'items.*.pieces_per_box' => ['nullable', 'regex:/^[1-9]\d*$/'],
             'items.*.expected_quantity' => ['required', 'regex:/^\d+(?:\.\d{1,3})?$/'],
             'items.*.received_quantity' => ['required', 'regex:/^\d+(?:\.\d{1,3})?$/'],
             'items.*.damaged_quantity' => ['required', 'regex:/^\d+(?:\.\d{1,3})?$/'],
@@ -235,12 +253,14 @@ class Form extends Component
     }
 
     /**
-     * @return array{product_id: string, expected_quantity: string, received_quantity: string, damaged_quantity: string, purchase_price: string, notes: string}
+     * @return array{product_id: string, unit_type: string, pieces_per_box: string, expected_quantity: string, received_quantity: string, damaged_quantity: string, purchase_price: string, notes: string}
      */
     private function emptyItem(): array
     {
         return [
             'product_id' => '',
+            'unit_type' => 'piece',
+            'pieces_per_box' => '1',
             'expected_quantity' => '0.000',
             'received_quantity' => '0.000',
             'damaged_quantity' => '0.000',

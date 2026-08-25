@@ -63,4 +63,27 @@ class SalamiLivewireFormsTest extends TestCase
         $this->assertSame('90.000', $product->fresh()->current_quantity);
         $this->assertDatabaseCount('stock_movements', 1);
     }
+
+    public function test_employee_can_save_a_salami_receipt_as_a_draft_without_touching_stock(): void
+    {
+        $employee = User::factory()->create(['role' => UserRole::Employee]);
+        $supplier = Supplier::factory()->create();
+        $product = SalamiProduct::factory()->create(['purchase_price' => '80.125']);
+
+        Livewire::actingAs($employee)
+            ->test(ReceiptForm::class)
+            ->set('supplierId', (string) $supplier->getKey())
+            ->set('receiptDate', '2026-08-20')
+            ->set('items.0.product_id', (string) $product->getKey())
+            ->set('items.0.expected_quantity', '100.000')
+            ->set('items.0.received_quantity', '94.000')
+            ->set('items.0.damaged_quantity', '4.000')
+            ->set('items.0.purchase_price', '80.125')
+            ->call('saveDraft')
+            ->assertHasNoErrors();
+
+        $this->assertDatabaseHas('salami_receipts', ['supplier_id' => $supplier->getKey(), 'status' => ReceiptStatus::Draft->value]);
+        $this->assertSame('0.000', $product->fresh()->current_quantity);
+        $this->assertDatabaseCount('stock_movements', 0);
+    }
 }

@@ -14,6 +14,7 @@ class FlowerProductFactory extends Factory
     {
         return [
             'name' => 'ورد '.fake()->unique()->word(),
+            'company_name' => fake()->company(),
             'code' => 'FL-'.fake()->unique()->numerify('####'),
             'color' => 'أحمر',
             'grade' => 'درجة أولى',

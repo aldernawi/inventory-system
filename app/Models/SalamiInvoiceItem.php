@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
 use LogicException;
 
-#[Fillable(['invoice_id', 'product_id', 'product_name', 'unit', 'quantity', 'unit_price', 'line_total'])]
+#[Fillable(['invoice_id', 'product_id', 'product_name', 'unit', 'conversion_factor', 'quantity', 'stock_quantity', 'unit_price', 'line_total'])]
 class SalamiInvoiceItem extends Model
 {
     /** @use HasFactory<SalamiInvoiceItemFactory> */
@@ -32,6 +32,8 @@ class SalamiInvoiceItem extends Model
     {
         return [
             'quantity' => 'decimal:3',
+            'conversion_factor' => 'decimal:3',
+            'stock_quantity' => 'decimal:3',
             'unit_price' => 'decimal:3',
             'line_total' => 'decimal:3',
         ];

@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['name', 'code', 'color', 'grade', 'unit', 'purchase_price', 'sale_price', 'minimum_quantity', 'notes', 'is_active', 'created_by', 'updated_by'])]
+#[Fillable(['name', 'company_name', 'code', 'color', 'grade', 'unit', 'purchase_price', 'sale_price', 'minimum_quantity', 'notes', 'is_active', 'created_by', 'updated_by'])]
 class FlowerProduct extends Model implements Stockable
 {
     /** @use HasFactory<FlowerProductFactory> */

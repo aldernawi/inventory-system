@@ -4,10 +4,12 @@ namespace App\Services\Salami;
 
 use App\Enums\InvoiceStatus;
 use App\Enums\PaymentStatus;
+use App\Enums\SalamiItemUnit;
 use App\Exceptions\Inventory\InsufficientStockException;
 use App\Exceptions\Inventory\StockMutationException;
 use App\Exceptions\Salami\InvoiceException;
 use App\Models\SalamiCustomer;
+use App\Models\SalamiDeliveryAgent;
 use App\Models\SalamiInvoice;
 use App\Models\SalamiInvoiceItem;
 use App\Models\SalamiProduct;
@@ -15,6 +17,8 @@ use App\Models\StockMovement;
 use App\Models\User;
 use App\Services\Inventory\StockService;
 use App\Support\InvoiceAmounts;
+use App\Support\Quantity;
+use App\Support\SalamiUnitConversion;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -31,10 +35,12 @@ class InvoiceService
     {
         return DB::transaction(function () use ($attributes, $items, $createdBy): SalamiInvoice {
             $customer = $this->activeCustomer($attributes['customer_id']);
+            $deliveryAgent = $this->deliveryAgentFor($customer, $attributes);
             $prepared = $this->prepareItems($items, $attributes);
             $invoice = SalamiInvoice::query()->create([
                 'invoice_number' => $this->nextInvoiceNumber(),
                 'customer_id' => $customer->getKey(),
+                'delivery_agent_id' => $deliveryAgent->getKey(),
                 'invoice_date' => $attributes['invoice_date'],
                 'payment_type' => $attributes['payment_type'],
                 ...$this->amountAttributes($prepared['amounts']),
@@ -45,7 +51,7 @@ class InvoiceService
 
             $this->createItems($invoice, $prepared['items']);
 
-            return $invoice->fresh(['customer', 'items.product']);
+            return $invoice->fresh(['customer', 'deliveryAgent', 'items.product']);
         });
     }
 
@@ -58,10 +64,12 @@ class InvoiceService
         return DB::transaction(function () use ($invoice, $attributes, $items, $updatedBy): SalamiInvoice {
             $lockedInvoice = $this->lockDraft($invoice);
             $customer = $this->activeCustomer($attributes['customer_id']);
+            $deliveryAgent = $this->deliveryAgentFor($customer, $attributes);
             $prepared = $this->prepareItems($items, $attributes);
 
             $lockedInvoice->update([
                 'customer_id' => $customer->getKey(),
+                'delivery_agent_id' => $deliveryAgent->getKey(),
                 'invoice_date' => $attributes['invoice_date'],
                 'payment_type' => $attributes['payment_type'],
                 ...$this->amountAttributes($prepared['amounts']),
@@ -71,7 +79,7 @@ class InvoiceService
             $lockedInvoice->items()->delete();
             $this->createItems($lockedInvoice, $prepared['items']);
 
-            return $lockedInvoice->fresh(['customer', 'items.product']);
+            return $lockedInvoice->fresh(['customer', 'deliveryAgent', 'items.product']);
         });
     }
 
@@ -88,7 +96,7 @@ class InvoiceService
     {
         return DB::transaction(function () use ($invoice, $confirmedBy): SalamiInvoice {
             $lockedInvoice = SalamiInvoice::query()
-                ->with('customer')
+                ->with(['customer.deliveryAgent', 'deliveryAgent'])
                 ->lockForUpdate()
                 ->find($invoice->getKey());
 
@@ -101,6 +109,7 @@ class InvoiceService
             }
 
             $this->assertActiveCustomer($lockedInvoice->customer);
+            $this->assertInvoiceDeliveryAgent($lockedInvoice);
             $items = SalamiInvoiceItem::query()
                 ->with('product')
                 ->where('invoice_id', $lockedInvoice->getKey())
@@ -135,8 +144,10 @@ class InvoiceService
                 $calculatedItem = $amounts['items'][$index];
                 $item->update([
                     'product_name' => $product->name,
-                    'unit' => $product->unit,
                     'quantity' => $calculatedItem['quantity'],
+                    'stock_quantity' => Quantity::from($calculatedItem['quantity'])
+                        ->multipliedBy(Quantity::from($item->conversion_factor))
+                        ->toString(),
                     'unit_price' => $calculatedItem['unit_price'],
                     'line_total' => $calculatedItem['line_total'],
                 ]);
@@ -144,7 +155,7 @@ class InvoiceService
                 try {
                     $this->stockService->sale(
                         $product,
-                        $calculatedItem['quantity'],
+                        $item->stock_quantity,
                         $confirmedBy,
                         $item,
                         "بيع عبر الفاتورة {$lockedInvoice->invoice_number}",
@@ -161,7 +172,7 @@ class InvoiceService
                 'confirmed_at' => now(),
             ]);
 
-            return $lockedInvoice->fresh(['customer', 'items.product', 'items.stockMovement', 'createdBy', 'confirmedBy']);
+            return $lockedInvoice->fresh(['customer', 'deliveryAgent', 'items.product', 'items.stockMovement', 'createdBy', 'confirmedBy']);
         });
     }
 
@@ -221,7 +232,7 @@ class InvoiceService
                 ]);
             });
 
-            return $lockedInvoice->fresh(['customer', 'items.product', 'createdBy', 'confirmedBy', 'cancelledBy']);
+            return $lockedInvoice->fresh(['customer', 'deliveryAgent', 'items.product', 'createdBy', 'confirmedBy', 'cancelledBy']);
         });
     }
 
@@ -243,7 +254,7 @@ class InvoiceService
     /**
      * @param  list<array<string, mixed>>  $items
      * @param  array{discount_amount?: string|null, paid_amount?: string|null, payment_type: string}  $attributes
-     * @return array{items: list<array{product: SalamiProduct, quantity: string, unit_price: string, line_total: string}>, amounts: array{subtotal_amount: string, discount_amount: string, total_amount: string, paid_amount: string, remaining_amount: string, payment_status: PaymentStatus, items: list<array{quantity: string, unit_price: string, line_total: string}>}}
+     * @return array{items: list<array{product: SalamiProduct, unit: string, conversion_factor: string, quantity: string, stock_quantity: string, unit_price: string, line_total: string}>, amounts: array{subtotal_amount: string, discount_amount: string, total_amount: string, paid_amount: string, remaining_amount: string, payment_status: PaymentStatus, items: list<array{quantity: string, unit_price: string, line_total: string}>}}
      */
     private function prepareItems(array $items, array $attributes): array
     {
@@ -253,6 +264,7 @@ class InvoiceService
 
         $productIds = [];
         $products = [];
+        $conversions = [];
         $amountItems = [];
 
         foreach ($items as $index => $item) {
@@ -269,6 +281,7 @@ class InvoiceService
             }
 
             $productIds[] = $productId;
+
             $product = SalamiProduct::query()->find($productId);
 
             if (! $product instanceof SalamiProduct || ! $product->is_active) {
@@ -276,6 +289,7 @@ class InvoiceService
             }
 
             $products[] = $product;
+            $conversions[] = $this->conversionForItem($item, $index);
             $amountItems[] = [
                 'quantity' => $item['quantity'] ?? '0',
                 'unit_price' => $item['unit_price'] ?? '0',
@@ -291,8 +305,12 @@ class InvoiceService
         $preparedItems = [];
 
         foreach ($products as $index => $product) {
+            $conversion = $conversions[$index];
             $preparedItems[] = [
                 'product' => $product,
+                'unit' => $conversion['unit']->label(),
+                'conversion_factor' => $conversion['factor']->toString(),
+                'stock_quantity' => $conversion['stock_quantity']->toString(),
                 ...$amounts['items'][$index],
             ];
         }
@@ -301,7 +319,7 @@ class InvoiceService
     }
 
     /**
-     * @param  list<array{product: SalamiProduct, quantity: string, unit_price: string, line_total: string}>  $items
+     * @param  list<array{product: SalamiProduct, unit: string, conversion_factor: string, quantity: string, stock_quantity: string, unit_price: string, line_total: string}>  $items
      */
     private function createItems(SalamiInvoice $invoice, array $items): void
     {
@@ -310,8 +328,10 @@ class InvoiceService
             $invoice->items()->create([
                 'product_id' => $product->getKey(),
                 'product_name' => $product->name,
-                'unit' => $product->unit,
+                'unit' => $item['unit'],
+                'conversion_factor' => $item['conversion_factor'],
                 'quantity' => $item['quantity'],
+                'stock_quantity' => $item['stock_quantity'],
                 'unit_price' => $item['unit_price'],
                 'line_total' => $item['line_total'],
             ]);
@@ -346,6 +366,59 @@ class InvoiceService
     {
         if (! $customer instanceof SalamiCustomer || ! $customer->is_active) {
             throw ValidationException::withMessages(['customer_id' => 'اختر محلًا أو عميلًا نشطًا للفاتورة.']);
+        }
+    }
+
+    /** @param array<string, mixed> $attributes */
+    private function deliveryAgentFor(SalamiCustomer $customer, array $attributes): SalamiDeliveryAgent
+    {
+        $deliveryAgentId = $attributes['delivery_agent_id'] ?? $customer->delivery_agent_id;
+        $deliveryAgent = is_numeric($deliveryAgentId)
+            ? SalamiDeliveryAgent::query()->find((int) $deliveryAgentId)
+            : null;
+
+        if (! $deliveryAgent instanceof SalamiDeliveryAgent || ! $deliveryAgent->is_active) {
+            throw ValidationException::withMessages(['delivery_agent_id' => 'اختر مندوب توصيل نشطًا للفاتورة.']);
+        }
+
+        if ((int) $customer->delivery_agent_id !== $deliveryAgent->getKey()) {
+            throw ValidationException::withMessages(['customer_id' => 'المحل المختار لا يتبع مندوب التوصيل المحدد.']);
+        }
+
+        return $deliveryAgent;
+    }
+
+    private function assertInvoiceDeliveryAgent(SalamiInvoice $invoice): void
+    {
+        if (! $invoice->deliveryAgent instanceof SalamiDeliveryAgent || ! $invoice->deliveryAgent->is_active) {
+            throw new InvoiceException('يجب أن تكون الفاتورة مرتبطة بمندوب توصيل نشط قبل اعتمادها.');
+        }
+
+        if ((int) $invoice->customer?->delivery_agent_id !== (int) $invoice->deliveryAgent->getKey()) {
+            throw new InvoiceException('المحل في الفاتورة لم يعد تابعًا للمندوب المحدد. عدّل المسودة أولاً.');
+        }
+    }
+
+    /**
+     * @param  array<string, mixed>  $item
+     * @return array{unit: SalamiItemUnit, factor: Quantity, stock_quantity: Quantity}
+     */
+    private function conversionForItem(array $item, int $index): array
+    {
+        try {
+            return SalamiUnitConversion::fromInput(
+                (string) ($item['unit_type'] ?? 'piece'),
+                (string) ($item['quantity'] ?? '0'),
+                $item['pieces_per_box'] ?? null,
+            );
+        } catch (ValidationException $exception) {
+            $errors = [];
+
+            foreach ($exception->errors() as $field => $messages) {
+                $errors["items.{$index}.{$field}"] = $messages;
+            }
+
+            throw ValidationException::withMessages($errors);
         }
     }
 

@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use LogicException;
 
 #[Fillable(['invoice_number', 'recipient_name', 'invoice_date', 'payment_type', 'payment_status', 'subtotal_amount', 'discount_amount', 'total_amount', 'paid_amount', 'remaining_amount', 'status', 'notes', 'created_by', 'updated_by', 'confirmed_by', 'confirmed_at', 'cancelled_by', 'cancelled_at', 'cancellation_reason'])]
@@ -21,6 +22,8 @@ class FlowerInvoice extends Model
     use HasFactory;
 
     private static bool $allowsConfirmedMutation = false;
+
+    private static bool $allowsPaymentMutation = false;
 
     protected static function booted(): void
     {
@@ -32,6 +35,19 @@ class FlowerInvoice extends Model
             if (self::$allowsConfirmedMutation
                 && $invoice->getRawOriginal('status') === InvoiceStatus::Confirmed->value
                 && $invoice->status === InvoiceStatus::Cancelled) {
+                return;
+            }
+
+            if (self::$allowsPaymentMutation
+                && $invoice->getRawOriginal('status') === InvoiceStatus::Confirmed->value
+                && $invoice->status === InvoiceStatus::Confirmed
+                && array_diff(array_keys($invoice->getDirty()), [
+                    'paid_amount',
+                    'remaining_amount',
+                    'payment_status',
+                    'updated_by',
+                    'updated_at',
+                ]) === []) {
                 return;
             }
 
@@ -59,6 +75,23 @@ class FlowerInvoice extends Model
             return $callback();
         } finally {
             self::$allowsConfirmedMutation = false;
+        }
+    }
+
+    /**
+     * @template T
+     *
+     * @param  Closure(): T  $callback
+     * @return T
+     */
+    public static function allowPaymentMutation(Closure $callback): mixed
+    {
+        self::$allowsPaymentMutation = true;
+
+        try {
+            return $callback();
+        } finally {
+            self::$allowsPaymentMutation = false;
         }
     }
 
@@ -102,5 +135,10 @@ class FlowerInvoice extends Model
     public function cancelledBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'cancelled_by');
+    }
+
+    public function payments(): MorphMany
+    {
+        return $this->morphMany(InvoicePayment::class, 'invoiceable');
     }
 }

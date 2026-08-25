@@ -4,7 +4,9 @@ namespace App\Livewire\Salami\Customers;
 
 use App\Livewire\Concerns\AuthorizesSalamiAccess;
 use App\Models\SalamiCustomer;
+use App\Models\SalamiDeliveryAgent;
 use Illuminate\Contracts\View\View;
+use Illuminate\Validation\Rule;
 use Livewire\Component;
 
 class Form extends Component
@@ -14,6 +16,8 @@ class Form extends Component
     public ?SalamiCustomer $customer = null;
 
     public string $name = '';
+
+    public string $deliveryAgentId = '';
 
     public string $contactPerson = '';
 
@@ -34,6 +38,7 @@ class Form extends Component
 
         if ($customer instanceof SalamiCustomer) {
             $this->name = $customer->name;
+            $this->deliveryAgentId = (string) ($customer->delivery_agent_id ?? '');
             $this->contactPerson = $customer->contact_person ?? '';
             $this->phone = $customer->phone ?? '';
             $this->area = $customer->area ?? '';
@@ -49,6 +54,7 @@ class Form extends Component
         $validated = $this->validate();
         $attributes = [
             'name' => $validated['name'],
+            'delivery_agent_id' => $validated['deliveryAgentId'],
             'contact_person' => $this->nullableText($validated['contactPerson']),
             'phone' => $this->nullableText($validated['phone']),
             'area' => $this->nullableText($validated['area']),
@@ -72,6 +78,7 @@ class Form extends Component
     {
         return [
             'name' => ['required', 'string', 'max:255'],
+            'deliveryAgentId' => ['required', 'integer', Rule::exists('salami_delivery_agents', 'id')->where('is_active', true)],
             'contactPerson' => ['nullable', 'string', 'max:255'],
             'phone' => ['nullable', 'string', 'max:50'],
             'area' => ['nullable', 'string', 'max:100'],
@@ -90,6 +97,12 @@ class Form extends Component
 
     public function render(): View
     {
-        return view('livewire.salami.customers.form');
+        $deliveryAgents = SalamiDeliveryAgent::query()
+            ->where('is_active', true)
+            ->when($this->deliveryAgentId !== '', fn ($query) => $query->orWhere('id', $this->deliveryAgentId))
+            ->orderBy('name')
+            ->get();
+
+        return view('livewire.salami.customers.form', compact('deliveryAgents'));
     }
 }

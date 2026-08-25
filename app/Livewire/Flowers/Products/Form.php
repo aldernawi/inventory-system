@@ -16,6 +16,8 @@ class Form extends Component
 
     public string $name = '';
 
+    public string $companyName = '';
+
     public string $code = '';
 
     public string $color = '';
@@ -41,6 +43,7 @@ class Form extends Component
 
         if ($product instanceof FlowerProduct) {
             $this->name = $product->name;
+            $this->companyName = $product->company_name ?? '';
             $this->code = $product->code;
             $this->color = $product->color ?? '';
             $this->grade = $product->grade ?? '';
@@ -59,6 +62,7 @@ class Form extends Component
         $validated = $this->validate();
         $attributes = [
             'name' => $validated['name'],
+            'company_name' => $this->nullableText($validated['companyName']),
             'code' => $validated['code'],
             'color' => $this->nullableText($validated['color']),
             'grade' => $this->nullableText($validated['grade']),
@@ -85,6 +89,7 @@ class Form extends Component
     {
         return [
             'name' => ['required', 'string', 'max:255'],
+            'companyName' => ['nullable', 'string', 'max:255'],
             'code' => ['required', 'string', 'max:100', Rule::unique('flower_products', 'code')->ignore($this->product)],
             'color' => ['nullable', 'string', 'max:100'],
             'grade' => ['nullable', 'string', 'max:100'],

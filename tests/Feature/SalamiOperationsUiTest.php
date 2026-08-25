@@ -7,6 +7,7 @@ use App\Livewire\Salami\Invoices\Form as InvoiceForm;
 use App\Livewire\Salami\Reports\Index as ReportsIndex;
 use App\Models\FlowerProduct;
 use App\Models\SalamiCustomer;
+use App\Models\SalamiDeliveryAgent;
 use App\Models\SalamiInvoice;
 use App\Models\SalamiProduct;
 use App\Models\User;
@@ -28,6 +29,7 @@ class SalamiOperationsUiTest extends TestCase
 
         Livewire::actingAs($employee)
             ->test(InvoiceForm::class)
+            ->set('deliveryAgentId', (string) $customer->delivery_agent_id)
             ->set('customerId', (string) $customer->getKey())
             ->set('invoiceDate', '2026-08-20')
             ->set('paymentType', 'cash')
@@ -39,7 +41,7 @@ class SalamiOperationsUiTest extends TestCase
             ->assertHasNoErrors();
 
         $this->assertSame('8.000', $product->fresh()->current_quantity);
-        $this->assertDatabaseHas('salami_invoices', ['customer_id' => $customer->getKey(), 'status' => 'confirmed']);
+        $this->assertDatabaseHas('salami_invoices', ['customer_id' => $customer->getKey(), 'delivery_agent_id' => $customer->delivery_agent_id, 'status' => 'confirmed']);
     }
 
     public function test_reports_only_include_salami_stock_records(): void
@@ -56,6 +58,27 @@ class SalamiOperationsUiTest extends TestCase
             ->set('report', 'movements')
             ->assertSee('صنف تقرير السلامي')
             ->assertDontSee('صنف تقرير الورد');
+    }
+
+    public function test_invoice_form_shows_only_the_stores_of_the_selected_delivery_agent(): void
+    {
+        $employee = User::factory()->create(['role' => UserRole::Employee]);
+        $selectedAgent = SalamiDeliveryAgent::factory()->create(['name' => 'مندوب طرابلس']);
+        $otherAgent = SalamiDeliveryAgent::factory()->create(['name' => 'مندوب بنغازي']);
+        $selectedCustomer = SalamiCustomer::factory()->create([
+            'name' => 'محل طرابلس',
+            'delivery_agent_id' => $selectedAgent->getKey(),
+        ]);
+        $otherCustomer = SalamiCustomer::factory()->create([
+            'name' => 'محل بنغازي',
+            'delivery_agent_id' => $otherAgent->getKey(),
+        ]);
+
+        Livewire::actingAs($employee)
+            ->test(InvoiceForm::class)
+            ->set('deliveryAgentId', (string) $selectedAgent->getKey())
+            ->assertSee($selectedCustomer->name)
+            ->assertDontSee($otherCustomer->name);
     }
 
     public function test_printing_requires_an_authenticated_active_user_and_employees_cannot_reach_admin_stock_pages(): void

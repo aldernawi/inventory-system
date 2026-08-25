@@ -29,6 +29,7 @@ class FlowerOperationsUiTest extends TestCase
         Livewire::actingAs($admin)
             ->test(ProductForm::class)
             ->set('name', 'جوري أحمر')
+            ->set('companyName', 'مزارع الجبل')
             ->set('code', 'ROSE-RED')
             ->set('color', 'أحمر')
             ->set('grade', 'درجة أولى')
@@ -39,7 +40,18 @@ class FlowerOperationsUiTest extends TestCase
             ->call('save')
             ->assertHasNoErrors();
 
-        $this->assertDatabaseHas('flower_products', ['code' => 'ROSE-RED', 'current_quantity' => '0.000']);
+        $this->assertDatabaseHas('flower_products', ['code' => 'ROSE-RED', 'company_name' => 'مزارع الجبل', 'current_quantity' => '0.000']);
+    }
+
+    public function test_same_flower_name_can_be_tracked_separately_by_company(): void
+    {
+        $first = FlowerProduct::factory()->create(['name' => 'توليب', 'company_name' => 'هولندا فلور', 'code' => 'TULIP-NL']);
+        $second = FlowerProduct::factory()->create(['name' => 'توليب', 'company_name' => 'مزارع المتوسط', 'code' => 'TULIP-MED']);
+
+        $this->assertNotSame($first->getKey(), $second->getKey());
+        $this->assertDatabaseCount('flower_products', 2);
+        $this->assertSame('هولندا فلور', $first->company_name);
+        $this->assertSame('مزارع المتوسط', $second->company_name);
     }
 
     public function test_employee_can_confirm_a_flower_receipt_but_cannot_reach_admin_only_flower_pages(): void
@@ -68,11 +80,34 @@ class FlowerOperationsUiTest extends TestCase
         $this->actingAs($employee)->get(route('flowers.exits.create'))->assertOk()->assertSee('تسجيل خروج ورد');
     }
 
+    public function test_employee_can_save_a_flower_receipt_as_a_draft_without_touching_stock(): void
+    {
+        $employee = User::factory()->create(['role' => UserRole::Employee]);
+        $supplier = Supplier::factory()->create(['module_scope' => SupplierScope::Flower]);
+        $product = FlowerProduct::factory()->create(['purchase_price' => '12.500']);
+
+        Livewire::actingAs($employee)
+            ->test(ReceiptForm::class)
+            ->set('supplierId', (string) $supplier->getKey())
+            ->set('receiptDate', '2026-08-20')
+            ->set('items.0.flower_product_id', (string) $product->getKey())
+            ->set('items.0.expected_quantity', '10.000')
+            ->set('items.0.received_quantity', '9.000')
+            ->set('items.0.damaged_quantity', '1.000')
+            ->set('items.0.purchase_price', '12.500')
+            ->call('saveDraft')
+            ->assertHasNoErrors();
+
+        $this->assertDatabaseHas('flower_receipts', ['supplier_id' => $supplier->getKey(), 'status' => 'draft']);
+        $this->assertSame('0.000', $product->fresh()->current_quantity);
+        $this->assertDatabaseCount('stock_movements', 0);
+    }
+
     public function test_flower_movement_history_isolated_from_salami_even_when_primary_keys_match(): void
     {
         $employee = User::factory()->create(['role' => UserRole::Employee]);
         $flower = FlowerProduct::factory()->create(['name' => 'ورد معزول']);
-        $salami = SalamiProduct::factory()->create(['name' => 'سلامي معزول']);
+        $salami = SalamiProduct::factory()->create(['id' => $flower->getKey(), 'name' => 'سلامي معزول']);
         $stock = app(StockService::class);
         $stock->opening($flower, '3.000', $employee, 'flower-only-history');
         $stock->opening($salami, '7.000', $employee, 'salami-only-history');

@@ -18,8 +18,10 @@ class SalamiInvoiceItemFactory extends Factory
             'invoice_id' => SalamiInvoice::factory(),
             'product_id' => SalamiProduct::factory(),
             'product_name' => 'سلامي تجريبي',
-            'unit' => 'كرتونة',
+            'unit' => 'قطعة',
+            'conversion_factor' => '1.000',
             'quantity' => '1.000',
+            'stock_quantity' => '1.000',
             'unit_price' => '100.000',
             'line_total' => '100.000',
         ];
