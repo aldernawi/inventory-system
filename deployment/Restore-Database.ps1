@@ -30,7 +30,10 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 function Assert-BackupStructure {
-    param([Parameter(Mandatory = $true)][string]$Path)
+    param(
+        [Parameter(Mandatory = $true)][string]$Path,
+        [switch]$AllowEmptyDatabase
+    )
 
     if ((Get-Item -LiteralPath $Path).Length -le 0) {
         throw "The selected backup is empty: $Path"
@@ -38,6 +41,10 @@ function Assert-BackupStructure {
 
     $hasCreateTable = Select-String -LiteralPath $Path -Pattern '^CREATE TABLE ' -Quiet
     $hasInsert = Select-String -LiteralPath $Path -Pattern '^INSERT INTO ' -Quiet
+
+    if ($AllowEmptyDatabase -and -not $hasCreateTable -and -not $hasInsert) {
+        return
+    }
 
     if (-not $hasCreateTable -or -not $hasInsert) {
         throw "The selected backup does not contain expected schema and data statements: $Path"
@@ -100,7 +107,7 @@ if ($LASTEXITCODE -ne 0) {
     throw "The disposable target safety backup could not be copied to $safetyBackupPath. Restore was not attempted."
 }
 
-Assert-BackupStructure -Path $safetyBackupPath
+Assert-BackupStructure -Path $safetyBackupPath -AllowEmptyDatabase
 $safetyBackupBytes = (Get-Item -LiteralPath $safetyBackupPath).Length
 
 & docker cp $BackupPath ("{0}:{1}" -f $containerId, $containerRestorePath)
