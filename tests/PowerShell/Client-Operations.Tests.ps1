@@ -37,6 +37,12 @@ Describe 'Client-Operations.ps1' {
         $content | Should Not Match '\[string\[\]\]\$ComposeFiles'
     }
 
+    It 'collects Docker Desktop paths as an array when exactly one installation is found' {
+        $content = Get-Content -Raw -LiteralPath $scriptPath
+
+        $content | Should Match '(?s)\$desktopPaths\s*=\s*@\(\s*@\(.*?\)\s*\|\s*Where-Object.*?\)'
+    }
+
     It 'contains a strict fresh-schema emptiness check that rejects malformed output' {
         $content = Get-Content -Raw -LiteralPath $scriptPath
 

@@ -100,9 +100,11 @@ function Ensure-DockerEngine {
     $ErrorActionPreference = $previousErrorActionPreference
     if ($dockerReady) { return }
     $desktopPaths = @(
-        (Join-Path $env:ProgramFiles 'Docker\Docker\Docker Desktop.exe'),
-        (Join-Path $env:LOCALAPPDATA 'Docker\Docker Desktop.exe')
-    ) | Where-Object { Test-Path -LiteralPath $_ }
+        @(
+            (Join-Path $env:ProgramFiles 'Docker\Docker\Docker Desktop.exe'),
+            (Join-Path $env:LOCALAPPDATA 'Docker\Docker Desktop.exe')
+        ) | Where-Object { Test-Path -LiteralPath $_ }
+    )
     if ($desktopPaths.Count -gt 0) { Start-Process -FilePath $desktopPaths[0] -WindowStyle Hidden }
     Write-ClientMessage 'جاري انتظار Docker...'
     for ($attempt = 1; $attempt -le 30; $attempt++) {
