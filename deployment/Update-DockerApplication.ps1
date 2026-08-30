@@ -1,11 +1,14 @@
 [CmdletBinding()]
 param(
-    [string]$ProjectRoot = (Split-Path -Parent $PSScriptRoot),
+    [string]$ProjectRoot,
     [switch]$DryRun
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+if ([string]::IsNullOrWhiteSpace($ProjectRoot)) {
+    $ProjectRoot = Split-Path -Parent $PSScriptRoot
+}
 $envFile = Join-Path $ProjectRoot '.env.docker'
 $client = Join-Path $ProjectRoot 'deployment\Client-Operations.ps1'
 if (-not (Test-Path -LiteralPath $envFile)) { throw 'Update requires the final .env.docker configuration.' }
