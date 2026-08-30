@@ -4,6 +4,7 @@ use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\InvoicePrintController;
 use App\Http\Controllers\ModulePageController;
+use App\Http\Controllers\TemporaryDataResetController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [HomeController::class, 'home']);
@@ -16,6 +17,8 @@ Route::middleware('guest')->group(function (): void {
 Route::middleware(['auth', 'active'])->group(function (): void {
     Route::get('/dashboard', [HomeController::class, 'dashboard'])->name('dashboard');
     Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
+    Route::get('/system/temporary-data-reset', [TemporaryDataResetController::class, 'index'])->middleware('can:reset-temporary-data')->name('system.temporary-data-reset');
+    Route::delete('/system/temporary-data-reset', [TemporaryDataResetController::class, 'destroy'])->middleware('can:reset-temporary-data')->name('system.temporary-data-reset.destroy');
 
     Route::prefix('salami')->as('salami.')->group(function (): void {
         Route::view('/dashboard', 'salami.livewire-page', ['title' => 'الرئيسية | إدارة مخزن السلامي', 'component' => 'salami.dashboard.index', 'parameters' => []])->name('dashboard');

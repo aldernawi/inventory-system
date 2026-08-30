@@ -38,6 +38,7 @@ class AppServiceProvider extends ServiceProvider
         Blade::directive('quantity', fn (string $expression): string => "<?php echo \\App\\Support\\DisplayNumber::quantity($expression); ?>");
         Blade::directive('money', fn (string $expression): string => "<?php echo \\App\\Support\\DisplayNumber::money($expression); ?>");
         Gate::define('manage-salami-master-data', fn (User $user): bool => $user->isAdmin());
+        Gate::define('reset-temporary-data', fn (User $user): bool => $user->isAdmin());
         Gate::define('register-salami-opening-stock', fn (User $user): bool => $user->isAdmin());
         Gate::define('operate-salami-receipts', fn (User $user): bool => $user->is_active);
         Gate::define('operate-salami-invoices', fn (User $user): bool => $user->is_active);

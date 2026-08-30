@@ -11,5 +11,14 @@
                 <span class="flex h-12 w-12 items-center justify-center rounded-xl bg-rose-500 text-xl font-bold text-white">و</span><h2 class="mt-8 text-2xl font-bold text-slate-950">إدارة الورد</h2><p class="mt-3 max-w-sm text-sm leading-7 text-slate-600">المخزون، الاستلامات، التالف والفواتير ضمن مساحة عمل مستقلة.</p><span class="mt-8 inline-flex items-center gap-2 text-sm font-semibold text-rose-900">دخول إلى النظام <span class="transition group-hover:-translate-x-1">←</span></span>
             </a>
         </div>
+        @can('reset-temporary-data')
+            <div class="mt-8 rounded-2xl border border-rose-200 bg-rose-50 p-5 text-right">
+                <p class="text-sm font-bold text-rose-800">أداة مؤقتة</p>
+                <div class="mt-2 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+                    <p class="text-sm leading-6 text-rose-900">إزالة بيانات التشغيل وإبقاء حسابات المستخدمين فقط.</p>
+                    <a href="{{ route('system.temporary-data-reset') }}" class="shrink-0 rounded-lg border border-rose-300 bg-white px-4 py-2.5 text-sm font-bold text-rose-700 hover:bg-rose-100">إزالة البيانات</a>
+                </div>
+            </div>
+        @endcan
     </section>
 @endsection
