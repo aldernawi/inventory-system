@@ -6,6 +6,32 @@ use Illuminate\Support\Facades\DB;
 
 class TemporaryDataResetService
 {
+    public function clearFlowerBusinessData(): void
+    {
+        DB::transaction(function (): void {
+            DB::table('invoice_payments')->where('invoiceable_type', 'flower_invoice')->delete();
+
+            $flowerMovementIds = DB::table('stock_movements')
+                ->where('stockable_type', 'flower_product')
+                ->pluck('id');
+
+            // Reversal movements reference their original movement through a restrictive foreign key.
+            DB::table('stock_movements')->whereIn('reverses_movement_id', $flowerMovementIds)->delete();
+            DB::table('stock_movements')->whereIn('id', $flowerMovementIds)->delete();
+
+            DB::table('stock_wastes')->where('stockable_type', 'flower_product')->delete();
+            DB::table('stock_adjustments')->where('stockable_type', 'flower_product')->delete();
+            DB::table('stock_openings')->where('stockable_type', 'flower_product')->delete();
+
+            DB::table('flower_invoice_items')->delete();
+            DB::table('flower_invoices')->delete();
+            DB::table('flower_receipt_items')->delete();
+            DB::table('flower_receipts')->delete();
+            DB::table('flower_exits')->delete();
+            DB::table('flower_products')->delete();
+        });
+    }
+
     public function clearBusinessData(): void
     {
         DB::transaction(function (): void {

@@ -19,6 +19,8 @@ Route::middleware(['auth', 'active'])->group(function (): void {
     Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
     Route::get('/system/temporary-data-reset', [TemporaryDataResetController::class, 'index'])->middleware('can:reset-temporary-data')->name('system.temporary-data-reset');
     Route::delete('/system/temporary-data-reset', [TemporaryDataResetController::class, 'destroy'])->middleware('can:reset-temporary-data')->name('system.temporary-data-reset.destroy');
+    Route::get('/system/flower-data-reset', [TemporaryDataResetController::class, 'flowerIndex'])->middleware('can:reset-temporary-data')->name('system.flower-data-reset');
+    Route::delete('/system/flower-data-reset', [TemporaryDataResetController::class, 'destroyFlower'])->middleware('can:reset-temporary-data')->name('system.flower-data-reset.destroy');
 
     Route::prefix('salami')->as('salami.')->group(function (): void {
         Route::view('/dashboard', 'salami.livewire-page', ['title' => 'الرئيسية | إدارة مخزن السلامي', 'component' => 'salami.dashboard.index', 'parameters' => []])->name('dashboard');

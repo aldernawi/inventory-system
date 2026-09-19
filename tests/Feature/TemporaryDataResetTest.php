@@ -96,6 +96,65 @@ class TemporaryDataResetTest extends TestCase
         $this->assertDatabaseHas('salami_products', ['id' => $product->getKey()]);
     }
 
+    public function test_admin_can_reset_only_flower_business_data_without_deleting_suppliers_or_salami_data(): void
+    {
+        $admin = User::factory()->create(['role' => UserRole::Admin]);
+        $supplier = Supplier::factory()->create();
+        $salamiProduct = SalamiProduct::factory()->create();
+        $flowerProduct = FlowerProduct::factory()->create();
+
+        SalamiReceiptItem::factory()->create(['product_id' => $salamiProduct]);
+        SalamiInvoiceItem::factory()->create(['product_id' => $salamiProduct]);
+        FlowerReceiptItem::factory()->create(['flower_product_id' => $flowerProduct]);
+        FlowerInvoiceItem::factory()->create(['flower_product_id' => $flowerProduct]);
+        FlowerExit::factory()->create(['flower_product_id' => $flowerProduct]);
+        InvoicePayment::factory()->create();
+        StockMovement::factory()->forFlowerProduct()->create(['stockable_id' => $flowerProduct]);
+        StockMovement::factory()->create(['stockable_id' => $salamiProduct]);
+        StockWaste::factory()->forFlowerProduct()->create(['stockable_id' => $flowerProduct]);
+        StockWaste::factory()->create(['stockable_id' => $salamiProduct]);
+        StockAdjustment::factory()->forFlowerProduct()->create(['stockable_id' => $flowerProduct]);
+        StockAdjustment::factory()->create(['stockable_id' => $salamiProduct]);
+        StockOpening::factory()->forFlowerProduct()->create(['stockable_id' => $flowerProduct]);
+        StockOpening::factory()->create(['stockable_id' => $salamiProduct]);
+
+        $this->actingAs($admin)
+            ->delete('/system/flower-data-reset', ['confirmation' => 'مسح بيانات الورد'])
+            ->assertRedirect('/flowers/dashboard')
+            ->assertSessionHas('status');
+
+        foreach (['flower_invoice_items', 'flower_invoices', 'flower_receipt_items', 'flower_receipts', 'flower_exits', 'flower_products'] as $table) {
+            $this->assertSame(0, DB::table($table)->count(), "The {$table} table should be empty.");
+        }
+
+        $this->assertSame(0, DB::table('invoice_payments')->where('invoiceable_type', 'flower_invoice')->count());
+        $this->assertSame(0, DB::table('stock_movements')->where('stockable_type', 'flower_product')->count());
+        $this->assertSame(0, DB::table('stock_wastes')->where('stockable_type', 'flower_product')->count());
+        $this->assertSame(0, DB::table('stock_adjustments')->where('stockable_type', 'flower_product')->count());
+        $this->assertSame(0, DB::table('stock_openings')->where('stockable_type', 'flower_product')->count());
+
+        $this->assertDatabaseHas('suppliers', ['id' => $supplier->getKey()]);
+        $this->assertDatabaseHas('salami_products', ['id' => $salamiProduct->getKey()]);
+        $this->assertSame(1, DB::table('stock_movements')->where('stockable_type', 'salami_product')->count());
+        $this->assertSame(1, DB::table('stock_wastes')->where('stockable_type', 'salami_product')->count());
+        $this->assertSame(1, DB::table('stock_adjustments')->where('stockable_type', 'salami_product')->count());
+        $this->assertSame(1, DB::table('stock_openings')->where('stockable_type', 'salami_product')->count());
+    }
+
+    public function test_flower_reset_requires_its_exact_confirmation_phrase(): void
+    {
+        $admin = User::factory()->create(['role' => UserRole::Admin]);
+        $product = FlowerProduct::factory()->create();
+
+        $this->actingAs($admin)
+            ->from('/system/flower-data-reset')
+            ->delete('/system/flower-data-reset', ['confirmation' => 'مسح البيانات'])
+            ->assertRedirect('/system/flower-data-reset')
+            ->assertSessionHasErrors('confirmation');
+
+        $this->assertDatabaseHas('flower_products', ['id' => $product->getKey()]);
+    }
+
     /** @return list<string> */
     private function businessTables(): array
     {

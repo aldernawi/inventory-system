@@ -16,7 +16,10 @@
                 <p class="text-sm font-bold text-rose-800">أداة مؤقتة</p>
                 <div class="mt-2 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
                     <p class="text-sm leading-6 text-rose-900">إزالة بيانات التشغيل وإبقاء حسابات المستخدمين فقط.</p>
-                    <a href="{{ route('system.temporary-data-reset') }}" class="shrink-0 rounded-lg border border-rose-300 bg-white px-4 py-2.5 text-sm font-bold text-rose-700 hover:bg-rose-100">إزالة البيانات</a>
+                    <div class="flex flex-wrap gap-2">
+                        <a href="{{ route('system.flower-data-reset') }}" class="shrink-0 rounded-lg border border-rose-300 bg-white px-4 py-2.5 text-sm font-bold text-rose-700 hover:bg-rose-100">مسح بيانات الورد فقط</a>
+                        <a href="{{ route('system.temporary-data-reset') }}" class="shrink-0 rounded-lg border border-rose-300 bg-white px-4 py-2.5 text-sm font-bold text-rose-700 hover:bg-rose-100">إزالة كل البيانات</a>
+                    </div>
                 </div>
             </div>
         @endcan

@@ -26,4 +26,22 @@ class TemporaryDataResetController extends Controller
 
         return to_route('dashboard')->with('status', 'تمت إزالة كل بيانات التشغيل المؤقتة. حسابات المستخدمين بقيت كما هي.');
     }
+
+    public function flowerIndex(): View
+    {
+        return view('system.flower-data-reset');
+    }
+
+    public function destroyFlower(Request $request, TemporaryDataResetService $temporaryDataReset): RedirectResponse
+    {
+        $request->validate([
+            'confirmation' => ['required', 'in:مسح بيانات الورد'],
+        ], [
+            'confirmation.in' => 'اكتب عبارة «مسح بيانات الورد» كما هي للتأكيد.',
+        ]);
+
+        $temporaryDataReset->clearFlowerBusinessData();
+
+        return to_route('flowers.dashboard')->with('status', 'تمت إزالة بيانات تشغيل الورد فقط. الموردون وبيانات السلامي بقيت كما هي.');
+    }
 }
