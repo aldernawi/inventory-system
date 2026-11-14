@@ -1,7 +1,7 @@
 @extends('layouts.app', [
     'title' => $title,
     'module' => 'salami',
-    'moduleName' => 'إدارة مخزن السلامي',
+    'moduleName' => 'شركة النظام المتجدد',
 ])
 
 @section('content')
