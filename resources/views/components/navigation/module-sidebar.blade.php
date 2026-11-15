@@ -1,6 +1,6 @@
 @php
     $isSalami = $module === 'salami';
-    $moduleName = $isSalami ? 'شركة النظام المتجدد' : 'شركة الورد المميز';
+    $moduleName = $isSalami ? 'شركة النظام المتجدد' : 'شركة الورود المميزة';
     $dashboardRoute = $isSalami ? 'salami.dashboard' : 'flowers.dashboard';
     $groups = $isSalami ? [
         ['label' => null, 'items' => [['label' => 'الرئيسية', 'route' => 'salami.dashboard']]],

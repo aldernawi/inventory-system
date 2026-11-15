@@ -1,7 +1,7 @@
 @extends('layouts.app', [
     'title' => $title,
     'module' => 'flowers',
-    'moduleName' => 'شركة الورد المميز',
+    'moduleName' => 'شركة الورود المميزة',
 ])
 
 @section('content')
