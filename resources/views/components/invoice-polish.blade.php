@@ -34,7 +34,7 @@
         .meta, .grid { gap: 4px; }
         .meta div, .grid .box { padding: 4px 6px; }
         .value { margin-top: 2px; }
-        table { font-size: 10px; }
+        table { font-size: 12px; }
         th, td { padding: 4px 5px; }
         .totals div { padding: 3px 8px; }
         .totals .final { font-size: 12px; }
