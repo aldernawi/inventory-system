@@ -35,12 +35,12 @@
         .meta div, .grid .box { padding: 4px 6px; }
         .value { margin-top: 2px; }
         table { font-size: 13px; }
-        th, td { padding: 7px 6px; }
-        .totals div { padding: 5px 8px; }
+        th, td { padding: 5px 6px; }
+        .totals div { padding: 4px 8px; }
         .totals .final { font-size: 12px; }
-        .sign, .signatures { margin-top: 8px; font-size: 10px; }
-        .sign > div, .signatures > div { padding: 10px 4px; }
-        .sign > div::after, .signatures > div::after { margin-top: 10px; }
+        .sign, .signatures { margin: 4px 0 0; font-size: 10px; }
+        .sign > div, .signatures > div { padding: 5px 4px; }
+        .sign > div::after, .signatures > div::after { margin-top: 7px; }
         .page > .notes, .page > .box { margin-top: 10px !important; }
     }
 </style>
